@@ -1,8 +1,8 @@
 ﻿param(
-  [string]$SourcePath = "基米素材\圆头耄耋哈气5分钟 - 1.studio_video_1744227455077.mp4(Av114309698951437,P1).mp3",
+  [string]$SourcePath = "基米素材\haqi.mp3",
   [string]$OutputPath = "backend\reference\hachimi.wav",
-  [double]$StartSeconds = 12,
-  [double]$DurationSeconds = 8,
+  [double]$StartSeconds = 0,
+  [double]$DurationSeconds = 2,
   [switch]$CheckOnly
 )
 

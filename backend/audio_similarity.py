@@ -31,6 +31,7 @@ class SimilarityResult:
     comment: str
     mode: str
     confidence: float
+    reasons: tuple[str, ...]
 
 
 def analyze_upload(upload_path: Path, reference_path: Path | None = None) -> SimilarityResult:
@@ -40,16 +41,16 @@ def analyze_upload(upload_path: Path, reference_path: Path | None = None) -> Sim
     if reference_path and reference_path.exists():
         ref_samples, ref_rate = read_wav(reference_path)
         reference = extract_features(ref_samples, ref_rate)
-        score = compare_features(features, reference)
+        score, reasons = compare_features(features, reference)
         mode = "reference"
     else:
-        score = score_hachimi_likeness(features)
+        score, reasons = score_hachimi_likeness(features)
         mode = "heuristic"
 
     similarity = max(0, min(100, round(score)))
     grade, comment = describe_score(similarity)
     confidence = confidence_from_features(features)
-    return SimilarityResult(similarity, grade, comment, mode, confidence)
+    return SimilarityResult(similarity, grade, comment, mode, confidence, tuple(reasons))
 
 
 def read_wav(path: Path) -> tuple[list[float], int]:
@@ -124,23 +125,50 @@ def extract_features(samples: list[float], sample_rate: int) -> AudioFeatures:
     )
 
 
-def compare_features(uploaded: AudioFeatures, reference: AudioFeatures) -> float:
-    band_score = _cosine(uploaded.bands, reference.bands) * 35
-    contour_score = _dtw_similarity(uploaded.contour, reference.contour) * 28
-    pitch_score = _ratio_score(uploaded.pitch_hz, reference.pitch_hz, tolerance=0.35) * 16
-    tempo_score = _ratio_score(uploaded.tempo_hz, reference.tempo_hz, tolerance=0.45) * 13
-    zcr_score = _ratio_score(uploaded.zcr, reference.zcr, tolerance=0.5) * 8
-    return band_score + contour_score + pitch_score + tempo_score + zcr_score
+def compare_features(uploaded: AudioFeatures, reference: AudioFeatures) -> tuple[float, list[str]]:
+    band_similarity = _cosine(uploaded.bands, reference.bands)
+    contour_similarity = _dtw_similarity(uploaded.contour, reference.contour)
+    pitch_similarity = _ratio_score(uploaded.pitch_hz, reference.pitch_hz, tolerance=0.35)
+    tempo_similarity = _ratio_score(uploaded.tempo_hz, reference.tempo_hz, tolerance=0.45)
+    zcr_similarity = _ratio_score(uploaded.zcr, reference.zcr, tolerance=0.5)
+    score = (
+        band_similarity * 35
+        + contour_similarity * 28
+        + pitch_similarity * 16
+        + tempo_similarity * 13
+        + zcr_similarity * 8
+    )
+    reasons = [
+        f"音色频带相似度约 {round(band_similarity * 100)}%，决定声音像不像示例。",
+        f"节奏轮廓相似度约 {round(contour_similarity * 100)}%，用于判断哈气起伏是否贴近。",
+        _pitch_reason(uploaded.pitch_hz, reference.pitch_hz, pitch_similarity),
+        _tempo_reason(uploaded.tempo_hz, reference.tempo_hz, tempo_similarity),
+    ]
+    return score, reasons
 
 
-def score_hachimi_likeness(features: AudioFeatures) -> float:
-    pitch_score = _range_score(features.pitch_hz, 180, 520) * 24
-    tempo_score = _range_score(features.tempo_hz, 2.0, 5.8) * 22
-    active_score = _range_score(features.active_ratio, 0.28, 0.95) * 16
-    clarity_score = _range_score(features.zcr, 0.03, 0.22) * 15
-    brightness_score = _range_score(features.bands[2] + features.bands[3], 0.2, 0.72) * 13
-    contour_score = _contour_liveliness(features.contour) * 10
-    return pitch_score + tempo_score + active_score + clarity_score + brightness_score + contour_score
+def score_hachimi_likeness(features: AudioFeatures) -> tuple[float, list[str]]:
+    pitch_match = _range_score(features.pitch_hz, 180, 520)
+    tempo_match = _range_score(features.tempo_hz, 2.0, 5.8)
+    active_match = _range_score(features.active_ratio, 0.28, 0.95)
+    clarity_match = _range_score(features.zcr, 0.03, 0.22)
+    brightness_match = _range_score(features.bands[2] + features.bands[3], 0.2, 0.72)
+    contour_match = _contour_liveliness(features.contour)
+    score = (
+        pitch_match * 24
+        + tempo_match * 22
+        + active_match * 16
+        + clarity_match * 15
+        + brightness_match * 13
+        + contour_match * 10
+    )
+    reasons = [
+        "当前没有生成参考 WAV，系统使用哈基米启发式特征评分。",
+        f"音高约 {round(features.pitch_hz)}Hz，和短促明亮的哈气目标匹配度约 {round(pitch_match * 100)}%。",
+        f"节奏速度约 {round(features.tempo_hz, 1)}Hz，重复起伏匹配度约 {round(tempo_match * 100)}%。",
+        f"有效声音占比约 {round(features.active_ratio * 100)}%，用于降低静音和背景声影响。",
+    ]
+    return score, reasons
 
 
 def describe_score(score: int) -> tuple[str, str]:
@@ -158,6 +186,20 @@ def confidence_from_features(features: AudioFeatures) -> float:
     active_score = _range_score(features.active_ratio, 0.25, 0.95)
     signal_score = _range_score(features.rms, 0.01, 0.22)
     return round(max(0.15, min(0.98, (duration_score + active_score + signal_score) / 3)), 2)
+
+
+def _pitch_reason(uploaded: float, reference: float, similarity: float) -> str:
+    if uploaded <= 0 or reference <= 0:
+        return "音高不够稳定，系统主要依据音色和节奏给分。"
+    direction = "更高" if uploaded > reference else "更低"
+    return f"你的主音高约 {round(uploaded)}Hz，比示例{direction}；音高接近度约 {round(similarity * 100)}%。"
+
+
+def _tempo_reason(uploaded: float, reference: float, similarity: float) -> str:
+    if uploaded <= 0 or reference <= 0:
+        return "节奏起伏不明显，建议模仿示例里的短促重复感。"
+    direction = "更快" if uploaded > reference else "更慢"
+    return f"你的节奏约 {round(uploaded, 1)}Hz，比示例{direction}；节奏接近度约 {round(similarity * 100)}%。"
 
 
 def _remove_dc(samples: list[float]) -> list[float]:

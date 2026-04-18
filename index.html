@@ -46,6 +46,14 @@
               <button class="secondary" id="resetButton" type="button" disabled>重新开始</button>
             </div>
 
+            <div class="sample-player" aria-label="哈基米示例音频">
+              <div>
+                <p class="sample-title">先听示例</p>
+                <p class="sample-copy">模仿这段哈气，再提交检测。</p>
+              </div>
+              <audio controls preload="metadata" src="./基米素材/haqi.mp3"></audio>
+            </div>
+
             <label class="upload">
               <span>上传音频文件</span>
               <input id="fileInput" type="file" accept="audio/*" />
@@ -106,6 +114,13 @@
           </div>
 
           <p class="settlement-comment" id="finalComment">录音完成后，哈基米宇宙会给你一个答案。</p>
+
+          <div class="reason-box" aria-labelledby="reason-title">
+            <p id="reason-title">评分理由</p>
+            <ul id="reasonList">
+              <li>等待检测完成。</li>
+            </ul>
+          </div>
 
           <div class="share-box">
             <p id="shareText">我刚测了哈基米浓度，结果正在生成。</p>

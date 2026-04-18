@@ -28,13 +28,19 @@ class HachimiHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            wav_bytes, filename = self._read_audio_field()
+            wav_bytes, filename, reference_bytes = self._read_audio_fields()
             TEMP_DIR.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(suffix=Path(filename).suffix or ".wav", dir=TEMP_DIR, delete=False) as temp:
                 temp.write(wav_bytes)
                 temp_path = Path(temp.name)
+            reference_path = REFERENCE_AUDIO
+            if reference_bytes:
+                with tempfile.NamedTemporaryFile(suffix=".wav", dir=TEMP_DIR, delete=False) as reference_temp:
+                    reference_temp.write(reference_bytes)
+                    reference_temp_path = Path(reference_temp.name)
+                reference_path = reference_temp_path
 
-            result = analyze_upload(temp_path, REFERENCE_AUDIO)
+            result = analyze_upload(temp_path, reference_path)
             self._json(
                 {
                     "similarity": result.similarity,
@@ -42,6 +48,7 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                     "comment": result.comment,
                     "mode": result.mode,
                     "confidence": result.confidence,
+                    "reasons": list(result.reasons),
                 }
             )
         except ValueError as error:
@@ -51,8 +58,10 @@ class HachimiHandler(SimpleHTTPRequestHandler):
         finally:
             if "temp_path" in locals():
                 temp_path.unlink(missing_ok=True)
+            if "reference_temp_path" in locals():
+                reference_temp_path.unlink(missing_ok=True)
 
-    def _read_audio_field(self) -> tuple[bytes, str]:
+    def _read_audio_fields(self) -> tuple[bytes, str, bytes | None]:
         content_length = int(self.headers.get("Content-Length", "0"))
         if content_length <= 0:
             raise ValueError("没有收到上传内容")
@@ -68,17 +77,29 @@ class HachimiHandler(SimpleHTTPRequestHandler):
             b"Content-Type: " + content_type.encode("utf-8") + b"\r\n\r\n" + body
         )
 
+        audio_payload = None
+        reference_payload = None
+        filename = "upload.wav"
+
         for part in message.iter_parts():
-            if part.get_param("name", header="content-disposition") == "audio":
+            field_name = part.get_param("name", header="content-disposition")
+            if field_name == "audio":
                 filename = part.get_filename() or "upload.wav"
                 payload = part.get_payload(decode=True)
                 if not payload:
                     raise ValueError("上传音频为空")
                 if not payload.startswith(b"RIFF"):
                     raise ValueError("当前后端接收 WAV 音频；请通过前端自动转换后提交")
-                return payload, filename
+                audio_payload = payload
+            elif field_name == "reference":
+                payload = part.get_payload(decode=True)
+                if payload and payload.startswith(b"RIFF"):
+                    reference_payload = payload
 
-        raise ValueError("缺少 audio 字段")
+        if not audio_payload:
+            raise ValueError("缺少 audio 字段")
+
+        return audio_payload, filename, reference_payload
 
     def _json(self, payload: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

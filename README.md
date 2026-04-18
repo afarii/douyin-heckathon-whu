@@ -85,7 +85,9 @@ audio
 
 后端会优先读取 `backend/reference/hachimi.wav` 作为参考音频。没有参考音频时，会进入启发式模式，根据短促、明亮、重复节奏等哈基米式声音特征评分。
 
-参考素材使用 `基米素材/圆头耄耋哈气5分钟 - 1.studio_video_1744227455077.mp4(Av114309698951437,P1).mp3`。该文件是 5 分钟循环音频，建议先裁剪成 5 到 8 秒的代表性 WAV 片段：
+参考素材使用 `基米素材/haqi.mp3`。页面会在提交前提供播放，用户可以先听示例再模仿。提交时前端会把示例音频转换为 WAV 一起发送给后端，后端优先以这段示例作为相似度参考。
+
+如果需要离线生成固定参考 WAV，可以运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\prepare_reference.ps1

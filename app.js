@@ -19,6 +19,7 @@ const finalScore = document.querySelector("#finalScore");
 const finalGrade = document.querySelector("#finalGrade");
 const finalComment = document.querySelector("#finalComment");
 const shareText = document.querySelector("#shareText");
+const reasonList = document.querySelector("#reasonList");
 const shareButton = document.querySelector("#shareButton");
 const againButton = document.querySelector("#againButton");
 
@@ -31,6 +32,7 @@ let startedAt = 0;
 let timerId;
 
 const ringLength = 326.73;
+const sampleAudioPath = "./基米素材/haqi.mp3";
 
 const localComments = [
   "这不是普通音频，这是正在向猫猫频道发射的哈基米电波。",
@@ -188,8 +190,25 @@ function decorateResult(result) {
   return {
     similarity,
     grade: result.grade || grade,
-    comment: result.comment || localComments[similarity % localComments.length] || comment
+    comment: result.comment || localComments[similarity % localComments.length] || comment,
+    reasons: result.reasons || getLocalReasons(similarity)
   };
+}
+
+function getLocalReasons(similarity) {
+  if (similarity >= 85) {
+    return ["节奏和示例很接近，哈气起伏抓得很稳。", "音色足够明亮，听起来很像参考素材。", "有效声音占比高，几乎没有空白水分。"];
+  }
+
+  if (similarity >= 60) {
+    return ["整体节奏已经有哈基米味道。", "音色和示例有相似部分，但尖锐度还可以再贴近。", "录音中有效声音足够用于判断。"];
+  }
+
+  if (similarity >= 30) {
+    return ["能听到哈气动作，但节奏轮廓和示例还有差距。", "音高或明亮度不够接近参考素材。", "可以先播放示例，再模仿它的短促起伏。"];
+  }
+
+  return ["节奏、音色和示例差异都比较明显。", "有效哈气片段偏少或声音不够清晰。", "建议靠近麦克风，听一遍示例后重新录制。"];
 }
 
 function getBadgeText(similarity) {
@@ -255,8 +274,12 @@ function setScore(value) {
 
 async function uploadAudio() {
   const uploadBlob = await toWavBlob(audioBlob);
+  const referenceBlob = await getReferenceWavBlob();
   const formData = new FormData();
   formData.append("audio", uploadBlob, audioFileName.replace(/\.[^.]+$/, "") + ".wav");
+  if (referenceBlob) {
+    formData.append("reference", referenceBlob, "haqi-reference.wav");
+  }
 
   const response = await fetch("/api/upload", {
     method: "POST",
@@ -268,6 +291,18 @@ async function uploadAudio() {
   }
 
   return decorateResult(await response.json());
+}
+
+async function getReferenceWavBlob() {
+  try {
+    const response = await fetch(sampleAudioPath);
+    if (!response.ok) {
+      return null;
+    }
+    return await toWavBlob(await response.blob());
+  } catch (error) {
+    return null;
+  }
 }
 
 async function toWavBlob(blob) {
@@ -365,11 +400,21 @@ function renderResult(result) {
   finalScore.textContent = `${result.similarity}%`;
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
+  renderReasons(result.reasons);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
   latestShareCopy = buildShareCopy(result);
   shareText.textContent = latestShareCopy;
   showSettlementPage();
+}
+
+function renderReasons(reasons) {
+  reasonList.replaceChildren();
+  for (const reason of reasons.slice(0, 4)) {
+    const item = document.createElement("li");
+    item.textContent = reason;
+    reasonList.append(item);
+  }
 }
 
 shareButton.addEventListener("click", async () => {

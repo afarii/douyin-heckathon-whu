@@ -23,11 +23,16 @@ def test_upload_api_returns_score() -> None:
     try:
         boundary = "----hachimi-test-boundary"
         audio = audio_path.read_bytes()
+        reference = audio_path.read_bytes()
         body = (
             f"--{boundary}\r\n"
             'Content-Disposition: form-data; name="audio"; filename="upload.wav"\r\n'
             "Content-Type: audio/wav\r\n\r\n"
-        ).encode("utf-8") + audio + f"\r\n--{boundary}--\r\n".encode("utf-8")
+        ).encode("utf-8") + audio + (
+            f"\r\n--{boundary}\r\n"
+            'Content-Disposition: form-data; name="reference"; filename="haqi-reference.wav"\r\n'
+            "Content-Type: audio/wav\r\n\r\n"
+        ).encode("utf-8") + reference + f"\r\n--{boundary}--\r\n".encode("utf-8")
 
         request = urllib.request.Request(
             f"http://127.0.0.1:{server.server_port}/api/upload",
@@ -42,7 +47,8 @@ def test_upload_api_returns_score() -> None:
         assert 0 <= payload["similarity"] <= 100
         assert payload["grade"]
         assert payload["comment"]
-        assert payload["mode"] in ("reference", "heuristic")
+        assert payload["mode"] == "reference"
+        assert payload["reasons"]
     finally:
         server.shutdown()
         server.server_close()
