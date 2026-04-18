@@ -1,0 +1,362 @@
+{
+  "version": "v1.0",
+  "updatedAt": "2026-04-18",
+  "achievements": [
+    {
+      "id": "first_hiss",
+      "name": "初次哈气",
+      "category": "基础成就",
+      "description": "完成第1次哈气录制",
+      "triggerCondition": "完成第1次哈气录制",
+      "reward": ["解锁“我的档案”页面"],
+      "relatedCopy": {
+        "unlocked": "你的哈气之旅从这里开始。虽然可能有点害羞，但迈出第一步就是胜利。",
+        "locked": "???"
+      },
+      "iconDescription": "一只张嘴的小猫，嘴里有一个小音符",
+      "iconColor": "#90EE90",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "hiss_3",
+      "name": "三连哈",
+      "category": "基础成就",
+      "description": "累计完成3次哈气录制",
+      "triggerCondition": "累计完成3次哈气录制",
+      "reward": ["解锁成就展示页面"],
+      "relatedCopy": {
+        "unlocked": "三次！你已经从“偶尔哈一下”进化到“习惯性哈气”了。你的肺活量正在提升。",
+        "locked": "???"
+      },
+      "iconDescription": "三只排排坐的小猫，每只都在哈气",
+      "iconColor": "#98FB98",
+      "progress": { "currentKey": "totalRecordings", "target": 3, "template": "{current}/3 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "hiss_10",
+      "name": "哈气十段",
+      "category": "基础成就",
+      "description": "累计完成10次哈气录制",
+      "triggerCondition": "累计完成10次哈气录制",
+      "reward": ["解锁“历史记录”页面"],
+      "relatedCopy": {
+        "unlocked": "十段哈气高手！你的肺活量已经超过了99%的人类。继续努力，百段大师在等着你。",
+        "locked": "???"
+      },
+      "iconDescription": "一只戴着黑带的猫，黑带上写着“十”",
+      "iconColor": "#3CB371",
+      "progress": { "currentKey": "totalRecordings", "target": 10, "template": "{current}/10 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "hiss_100",
+      "name": "百哈大师",
+      "category": "基础成就",
+      "description": "累计完成100次哈气录制",
+      "triggerCondition": "累计完成100次哈气录制",
+      "reward": ["专属“百哈大师”称号标识"],
+      "relatedCopy": {
+        "unlocked": "一百次！你不再是人类，你是猫科声学研究的活体样本。哈气博物馆应该给你留一个展位。",
+        "locked": "???"
+      },
+      "iconDescription": "一只戴着皇冠的猫，周围有100个小音符环绕",
+      "iconColor": "#006400",
+      "progress": { "currentKey": "totalRecordings", "target": 100, "template": "{current}/100 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "breaker",
+      "name": "破冰者",
+      "category": "强度成就",
+      "description": "单次录制 HIS ≥ 3.0",
+      "triggerCondition": "单次录制 HIS ≥ 3.0",
+      "reward": [],
+      "relatedCopy": {
+        "unlocked": "你打破了“软萌”的冰层，正式进入哈气战场。Lv.3 警告哈气达成！",
+        "locked": "???"
+      },
+      "iconDescription": "一块碎裂的冰块，冰块中间是一只猫的轮廓",
+      "iconColor": "#87CEEB",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "defender",
+      "name": "防御者",
+      "category": "强度成就",
+      "description": "单次录制 HIS ≥ 5.0",
+      "triggerCondition": "单次录制 HIS ≥ 5.0",
+      "reward": [],
+      "relatedCopy": {
+        "unlocked": "你的哈气已经具备实战防御能力。入侵者请注意——这只猫不好惹。Lv.4 防御姿态达成！",
+        "locked": "???"
+      },
+      "iconDescription": "一面盾牌，盾牌上刻着一只哈气的猫",
+      "iconColor": "#9ACD32",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "rage_cat",
+      "name": "暴怒之猫",
+      "category": "强度成就",
+      "description": "单次录制 HIS ≥ 7.0",
+      "triggerCondition": "单次录制 HIS ≥ 7.0",
+      "reward": ["解锁高级PK模板"],
+      "relatedCopy": {
+        "unlocked": "暴怒模式激活！你的哈气已经可以写进学术论文了。Lv.6 暴怒哈气达成！论文作者可能会联系你。",
+        "locked": "???"
+      },
+      "iconDescription": "一只浑身燃烧火焰的猫，怒目圆睁",
+      "iconColor": "#FF4500",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "maodie_certified",
+      "name": "耄耋认证",
+      "category": "强度成就",
+      "description": "单次录制 HIS ≥ 9.0",
+      "triggerCondition": "单次录制 HIS ≥ 9.0",
+      "reward": ["解锁传说PK模板"],
+      "relatedCopy": {
+        "unlocked": "恭喜获得耄耋认证！你的哈气已经达到了传说级别。这是由耄耋本耄亲自颁发的认证（并不是）。Lv.8 传说哈气达成！",
+        "locked": "???"
+      },
+      "iconDescription": "一个橘猫形状的印章，上面写着“耄耋认证”",
+      "iconColor": "#FF8C00",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "beyond_maodie",
+      "name": "超越耄耋",
+      "category": "强度成就",
+      "description": "单次录制 HIS ≥ 10.0",
+      "triggerCondition": "单次录制 HIS ≥ 10.0",
+      "reward": ["解锁地狱PK模板", "“超越耄耋”专属边框"],
+      "relatedCopy": {
+        "unlocked": "你超越了耄耋！猫界至尊的位置可能要换人了。耄耋本耄发来贺电：“后生可畏”。Lv.9 耄耋降临达成！",
+        "locked": "???"
+      },
+      "iconDescription": "一只闪电形状的橘猫，脚下是破碎的王座",
+      "iconColor": "#FF0000",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "high_pitch",
+      "name": "高音达人",
+      "category": "技巧成就",
+      "description": "单次录制 peakFreq > 7000 Hz",
+      "triggerCondition": "单次录制 peakFreq > 7000 Hz",
+      "reward": ["“高音达人”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气频率突破了7000Hz！蝙蝠听了都要鼓掌，超声波检测仪都要报警了。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫头上有一个高音谱号",
+      "iconColor": "#FF69B4",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "endurance_king",
+      "name": "持久之王",
+      "category": "技巧成就",
+      "description": "单次录制 activeDuration > 2.5 s",
+      "triggerCondition": "单次录制 activeDuration > 2.5 s",
+      "reward": ["“持久之王”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气持续超过2.5秒！肺活量王者就是你。建议去参加自由潜水比赛，你的憋气能力应该不差。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫举着沙漏，沙漏里的沙子快流完了",
+      "iconColor": "#DAA520",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "chaos_master",
+      "name": "混沌大师",
+      "category": "技巧成就",
+      "description": "单次录制 freqVariance > 2500 Hz²",
+      "triggerCondition": "单次录制 freqVariance > 2500 Hz²",
+      "reward": ["“混沌大师”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气频率方差突破2500！不可预测就是你的武器。频谱分析仪看了你的哈气都要报错。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫站在旋涡中心，周围是混乱的声波",
+      "iconColor": "#9400D3",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "stable_output",
+      "name": "稳定输出",
+      "category": "技巧成就",
+      "description": "单次录制 volumeVariance < 0.05 且 activeDuration > 1.0 s",
+      "triggerCondition": "单次录制 volumeVariance < 0.05 且 activeDuration > 1.0 s",
+      "reward": ["“稳定输出”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气音量波动不到5%！人形节拍器认证通过。你的哈气比大多数人的唱歌还稳定。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫站在一条笔直的线上，线条两端有箭头",
+      "iconColor": "#4682B4",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "bass_cannon",
+      "name": "低音炮",
+      "category": "技巧成就",
+      "description": "单次录制 dominantFreq < 2000 Hz 且 avgDB > 50 dB",
+      "triggerCondition": "单次录制 dominantFreq < 2000 Hz 且 avgDB > 50 dB",
+      "reward": ["“低音炮”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气主频低于2000Hz但响度超过50dB！低音炮猫就是你。你的哈气能让桌面上的水杯产生共振。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫坐在一个低音音箱上，音箱在震动",
+      "iconColor": "#2F4F4F",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "first_battle",
+      "name": "初次PK",
+      "category": "社交成就",
+      "description": "完成第1次用户PK（模板对比或用户对战）",
+      "triggerCondition": "完成第1次用户PK（模板对比或用户对战）",
+      "reward": ["解锁PK功能"],
+      "relatedCopy": {
+        "unlocked": "你的第一次PK！无论输赢，勇气可嘉。哈气擂台的大门已经为你敞开。",
+        "locked": "???"
+      },
+      "iconDescription": "两只对峙的猫，中间有一个闪电符号",
+      "iconColor": "#FFD700",
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "win_streak_5",
+      "name": "五连胜",
+      "category": "社交成就",
+      "description": "PK连胜5次",
+      "triggerCondition": "PK连胜5次",
+      "reward": ["“五连胜”标签"],
+      "relatedCopy": {
+        "unlocked": "五连胜！你是哈气擂台上的常胜将军。对手们已经开始研究你的哈气录像了。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫戴着拳击手套，身后有五颗金星",
+      "iconColor": "#FF6347",
+      "progress": { "currentKey": "winStreak", "target": 5, "template": "当前连胜 {current} 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "challenger",
+      "name": "挑战者",
+      "category": "社交成就",
+      "description": "累计发起10次PK挑战",
+      "triggerCondition": "累计发起10次PK挑战",
+      "reward": ["“挑战者”标签"],
+      "relatedCopy": {
+        "unlocked": "你已经向10位选手发起了挑战。好战分子认证通过。你不是在找对手，你是在收集对手。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫举着剑，剑上缠绕着声波",
+      "iconColor": "#DC143C",
+      "progress": { "currentKey": "challengesSent", "target": 10, "template": "{current}/10 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "popularity_star",
+      "name": "人气之星",
+      "category": "社交成就",
+      "description": "被其他用户PK挑战超过10次（通过挑战码统计）",
+      "triggerCondition": "被其他用户PK挑战超过10次（通过挑战码统计）",
+      "reward": ["“人气之星”标签"],
+      "relatedCopy": {
+        "unlocked": "你的哈气太有名了，10个人都想来挑战你。你是哈气界的“全民公敌”——当然，是褒义的。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫被星星环绕，星星上有爱心",
+      "iconColor": "#FF1493",
+      "progress": { "currentKey": "challengesReceived", "target": 10, "template": "被挑战 {current}/10 次" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "type_collector",
+      "name": "全类型收集",
+      "category": "社交成就",
+      "description": "收集到8种以上不同的人格类型（不含隐藏人格）",
+      "triggerCondition": "收集到8种以上不同的人格类型（不含隐藏人格）",
+      "reward": ["“全类型收集”标签", "彩虹猫头像框"],
+      "relatedCopy": {
+        "unlocked": "你已经解锁了8种以上的人格类型！哈气界的收藏家。你的哈气风格比变色龙还多变。",
+        "locked": "???"
+      },
+      "iconDescription": "一只彩虹色的猫，身后有16个小图标排列",
+      "iconColor": "彩虹渐变",
+      "progress": { "currentKey": "personalityHistory", "target": 8, "template": "{current}/8 种" },
+      "showBeforeUnlock": true
+    },
+    {
+      "id": "traitor_cat",
+      "name": "叛徒猫",
+      "category": "隐藏成就",
+      "description": "触发 MEOOOW 隐藏人格（在哈气模拟器里喵喵叫）",
+      "triggerCondition": "触发 MEOOOW 隐藏人格（在哈气模拟器里喵喵叫）",
+      "reward": ["“叛徒猫”标签", "粉色头像框"],
+      "relatedCopy": {
+        "unlocked": "在哈气模拟器里喵喵叫……你是来搞笑的吗？恭喜获得“叛徒猫”徽章！你的行为已经被系统记录，耄耋对你的评价是：“叛徒”。",
+        "locked": "???"
+      },
+      "iconDescription": "一只戴着墨镜的猫，嘴角有一抹坏笑",
+      "iconColor": "#FF69B4",
+      "showBeforeUnlock": false,
+      "lockedName": "???"
+    },
+    {
+      "id": "air_master",
+      "name": "空气大师",
+      "category": "隐藏成就",
+      "description": "触发 SILENT 隐藏人格（录制全程静音或时长<0.3s）",
+      "triggerCondition": "触发 SILENT 隐藏人格（录制全程静音或时长<0.3s）",
+      "reward": ["“空气大师”标签", "透明头像框"],
+      "relatedCopy": {
+        "unlocked": "什么都没录就敢提交？你的勇气比你的哈气响亮。恭喜获得“空气大师”徽章！你已经达到了哈气的最高境界——无声。",
+        "locked": "???"
+      },
+      "iconDescription": "一个透明的猫轮廓，只有轮廓线可见",
+      "iconColor": "#E0E0E0",
+      "showBeforeUnlock": false,
+      "lockedName": "???"
+    },
+    {
+      "id": "midnight_hiss",
+      "name": "凌晨哈气",
+      "category": "隐藏成就",
+      "description": "在凌晨 0:00 - 5:00 之间完成哈气录制",
+      "triggerCondition": "在凌晨 0:00 - 5:00 之间完成哈气录制",
+      "reward": ["“凌晨哈气”标签", "月亮头像框"],
+      "relatedCopy": {
+        "unlocked": "凌晨还在哈气？你到底是猫还是夜猫子？不管怎样，凌晨的哈气有额外的“阴间加成”（并没有）。恭喜获得“凌晨哈气”徽章！",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫坐在月亮上，对着星星哈气",
+      "iconColor": "#191970",
+      "showBeforeUnlock": false,
+      "lockedName": "???"
+    },
+    {
+      "id": "speed_star",
+      "name": "速度之星",
+      "category": "隐藏成就",
+      "description": "从打开页面到完成哈气录制并获取结果，不超过10秒",
+      "triggerCondition": "从打开页面到完成哈气录制并获取结果，不超过10秒",
+      "reward": ["“速度之星”标签", "闪电头像框"],
+      "relatedCopy": {
+        "unlocked": "10秒！从打开页面到哈完气。你是哈气界的速度之星。你的手速比你的哈气还快。",
+        "locked": "???"
+      },
+      "iconDescription": "一只猫被闪电环绕，脚下有速度线",
+      "iconColor": "#FFD700",
+      "showBeforeUnlock": false,
+      "lockedName": "???"
+    }
+  ]
+}

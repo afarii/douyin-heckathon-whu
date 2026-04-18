@@ -39,6 +39,41 @@ const wechatShareButton = document.querySelector("#wechatShareButton");
 const qqShareButton = document.querySelector("#qqShareButton");
 const weiboShareButton = document.querySelector("#weiboShareButton");
 const againButton = document.querySelector("#againButton");
+const navStage = document.querySelector("#navStage");
+const navSettlement = document.querySelector("#navSettlement");
+const navRanking = document.querySelector("#navRanking");
+const navAchievements = document.querySelector("#navAchievements");
+const navProfile = document.querySelector("#navProfile");
+const rankingPage = document.querySelector("#rankingPage");
+const achievementsPage = document.querySelector("#achievementsPage");
+const profilePage = document.querySelector("#profilePage");
+const rankingMode = document.querySelector("#rankingMode");
+const rankingList = document.querySelector("#rankingList");
+const rankingHint = document.querySelector("#rankingHint");
+const rankingClearButton = document.querySelector("#rankingClearButton");
+const achievementsGrid = document.querySelector("#achievementsGrid");
+const achievementsResetSeenButton = document.querySelector("#achievementsResetSeenButton");
+const profileTotal = document.querySelector("#profileTotal");
+const profileBestHis = document.querySelector("#profileBestHis");
+const profileBestSimilarity = document.querySelector("#profileBestSimilarity");
+const profileLatest = document.querySelector("#profileLatest");
+const profileLatestSub = document.querySelector("#profileLatestSub");
+const profilePersonaChips = document.querySelector("#profilePersonaChips");
+const profileRecentList = document.querySelector("#profileRecentList");
+const profileClearButton = document.querySelector("#profileClearButton");
+const hisBox = document.querySelector("#hisBox");
+const hisTag = document.querySelector("#hisTag");
+const hisValue = document.querySelector("#hisValue");
+const hisDesc = document.querySelector("#hisDesc");
+const hisHint = document.querySelector("#hisHint");
+const achievementModal = document.querySelector("#achievementModal");
+const achievementModalClose = document.querySelector("#achievementModalClose");
+const achievementModalOk = document.querySelector("#achievementModalOk");
+const achievementModalList = document.querySelector("#achievementModalList");
+const confirmModal = document.querySelector("#confirmModal");
+const confirmModalClose = document.querySelector("#confirmModalClose");
+const confirmModalCancel = document.querySelector("#confirmModalCancel");
+const confirmModalConfirm = document.querySelector("#confirmModalConfirm");
 
 let mediaRecorder;
 let stream;
@@ -50,9 +85,15 @@ let timerId;
 let latestResult = null;
 let latestShareBlob = null;
 let latestShareUrl = "";
+let pageOpenedAt = Date.now();
+let achievementsDefinition = [];
+let pendingConfirmAction = null;
+let currentView = "stage";
 
 const ringLength = 326.73;
-const historyKey = "hachimi-history-v1";
+const legacyHistoryKey = "hachimi-history-v1";
+const runsKey = "hachimi-runs-v1";
+const achievementsKey = "hachimi-achievements-v1";
 const sampleAudioPath = "./基米素材/haqi.mp3";
 const scoreAssets = {
   high: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%9F%BA%E7%B1%B3%E5%8A%A8%E5%9B%BE1%E7%BB%93%E7%AE%97%E7%94%BB%E9%9D%A2.gif",
@@ -131,6 +172,14 @@ function resetAudio() {
   wechatShareButton.disabled = true;
   qqShareButton.disabled = true;
   weiboShareButton.disabled = true;
+  hisBox.hidden = true;
+  hisTag.textContent = "--";
+  hisValue.textContent = "HIS --";
+  hisDesc.textContent = "--";
+  hisHint.textContent = "--";
+  if (navSettlement) {
+    navSettlement.disabled = true;
+  }
   showEntryPage();
 }
 
@@ -227,6 +276,15 @@ function decorateResult(result) {
     comment: result.comment || localComments[similarity % localComments.length] || comment,
     reasons: result.reasons || getLocalReasons(similarity),
     details: result.details || {},
+    audioHis: Number.isFinite(Number(result.audioHis)) ? Number(result.audioHis) : null,
+    hisLevelInfo: result.hisLevelInfo && typeof result.hisLevelInfo === "object" ? result.hisLevelInfo : null,
+    hisLevel: Number.isFinite(Number(result.hisLevel)) ? Number(result.hisLevel) : null,
+    peakFreq: Number.isFinite(Number(result.peakFreq)) ? Number(result.peakFreq) : null,
+    activeDuration: Number.isFinite(Number(result.activeDuration)) ? Number(result.activeDuration) : null,
+    freqVariance: Number.isFinite(Number(result.freqVariance)) ? Number(result.freqVariance) : null,
+    volumeVariance: Number.isFinite(Number(result.volumeVariance)) ? Number(result.volumeVariance) : null,
+    dominantFreq: Number.isFinite(Number(result.dominantFreq)) ? Number(result.dominantFreq) : null,
+    avgDB: Number.isFinite(Number(result.avgDB)) ? Number(result.avgDB) : null,
     personalityCode: result.personalityCode ?? "",
     personalityMatch: result.personalityMatch ?? null,
     dimensionMatches: Array.isArray(result.dimensionMatches) ? result.dimensionMatches : [],
@@ -286,21 +344,54 @@ function buildShareCopy(result) {
   return `我刚测了哈基米浓度：${result.similarity}%｜${result.grade}。${result.comment}`;
 }
 
+function setActiveNav(view) {
+  const mapping = [
+    [navStage, "stage"],
+    [navSettlement, "settlement"],
+    [navRanking, "ranking"],
+    [navAchievements, "achievements"],
+    [navProfile, "profile"]
+  ];
+  mapping.forEach(([button, key]) => {
+    if (!button) {
+      return;
+    }
+    button.classList.toggle("is-active", key === view);
+  });
+}
+
+function showView(view) {
+  let target = view;
+  if (target === "settlement" && !latestResult) {
+    target = "stage";
+  }
+
+  currentView = target;
+  stagePage.hidden = target !== "stage";
+  settlementPage.hidden = target !== "settlement";
+  rankingPage.hidden = target !== "ranking";
+  achievementsPage.hidden = target !== "achievements";
+  profilePage.hidden = target !== "profile";
+  setActiveNav(target);
+
+  if (target !== "settlement") {
+    settlementAudio.pause();
+    settlementAudio.currentTime = 0;
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    settlementAudio.currentTime = 0;
+    settlementAudio.play().catch(() => {
+      settlementAudio.controls = true;
+    });
+  }
+}
+
 function showEntryPage() {
-  stagePage.hidden = false;
-  settlementPage.hidden = true;
-  settlementAudio.pause();
-  settlementAudio.currentTime = 0;
+  showView("stage");
 }
 
 function showSettlementPage() {
-  stagePage.hidden = true;
-  settlementPage.hidden = false;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  settlementAudio.currentTime = 0;
-  settlementAudio.play().catch(() => {
-    settlementAudio.controls = true;
-  });
+  showView("settlement");
 }
 
 function getScoreLevel(value) {
@@ -351,28 +442,90 @@ function updateSettlementScore(value) {
   settlementScore.dataset.level = level.name;
 }
 
-function getHistory() {
+function safeJsonParse(value, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(historyKey)) || [];
+    const parsed = JSON.parse(value);
+    return parsed ?? fallback;
   } catch (error) {
-    return [];
+    return fallback;
   }
 }
 
-function saveHistory(result) {
-  const next = [
-    {
-      similarity: result.similarity,
-      grade: result.grade,
-      comment: result.comment,
-      createdAt: Date.now()
-    },
-    ...getHistory()
-  ]
-    .sort((a, b) => b.similarity - a.similarity || b.createdAt - a.createdAt)
-    .slice(0, 10);
-  localStorage.setItem(historyKey, JSON.stringify(next));
-  renderHistory();
+function migrateLegacyHistory() {
+  const existing = localStorage.getItem(runsKey);
+  if (existing) {
+    return;
+  }
+
+  const legacyRaw = localStorage.getItem(legacyHistoryKey);
+  if (!legacyRaw) {
+    return;
+  }
+
+  const legacy = safeJsonParse(legacyRaw, []);
+  if (!Array.isArray(legacy) || !legacy.length) {
+    return;
+  }
+
+  const migrated = legacy
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      createdAt: Number(item.createdAt) || Date.now(),
+      similarity: Number(item.similarity) || 0,
+      grade: String(item.grade || ""),
+      comment: String(item.comment || ""),
+      audioHis: null,
+      hisLevelInfo: null,
+      personalityCode: "",
+      personalityProfile: null,
+      peakFreq: null,
+      activeDuration: null,
+      freqVariance: null,
+      volumeVariance: null,
+      dominantFreq: null,
+      avgDB: null,
+      timeSinceOpenMs: null
+    }));
+
+  localStorage.setItem(runsKey, JSON.stringify(migrated.slice(0, 200)));
+}
+
+function getRuns() {
+  migrateLegacyHistory();
+  const raw = localStorage.getItem(runsKey);
+  const parsed = safeJsonParse(raw, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function setRuns(runs) {
+  localStorage.setItem(runsKey, JSON.stringify(runs));
+}
+
+function addRun(result) {
+  const now = Date.now();
+  const run = {
+    createdAt: now,
+    similarity: result.similarity,
+    grade: result.grade,
+    comment: result.comment,
+    audioHis: Number.isFinite(result.audioHis) ? result.audioHis : null,
+    hisLevelInfo: result.hisLevelInfo,
+    personalityCode: String(result.personalityCode || ""),
+    personalityProfile: result.personalityProfile,
+    peakFreq: result.peakFreq,
+    activeDuration: result.activeDuration,
+    freqVariance: result.freqVariance,
+    volumeVariance: result.volumeVariance,
+    dominantFreq: result.dominantFreq,
+    avgDB: result.avgDB,
+    timeSinceOpenMs: Math.max(0, now - pageOpenedAt)
+  };
+  const next = [run, ...getRuns()].slice(0, 200);
+  setRuns(next);
+  renderSettlementHistory();
+  renderRanking();
+  renderProfile();
+  return run;
 }
 
 function formatHistoryTime(timestamp) {
@@ -384,26 +537,48 @@ function formatHistoryTime(timestamp) {
   }).format(new Date(timestamp));
 }
 
-function renderHistory() {
-  const history = getHistory();
+function getRankingColor(run) {
+  const hisColor = String(run?.hisLevelInfo?.color || "").trim();
+  if (hisColor) {
+    return hisColor;
+  }
+  const similarityValue = Number(run?.similarity);
+  return getScoreLevel(Number.isFinite(similarityValue) ? similarityValue : 0).color;
+}
+
+function formatHisValue(value) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  return Number(value).toFixed(1);
+}
+
+function renderSettlementHistory() {
+  const runs = getRuns();
+  const ranking = runs
+    .slice()
+    .sort((a, b) => (Number(b.audioHis) || -1) - (Number(a.audioHis) || -1) || (Number(b.similarity) || 0) - (Number(a.similarity) || 0) || (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
+    .slice(0, 10);
+
   historyList.replaceChildren();
 
-  if (!history.length) {
+  if (!ranking.length) {
     const item = document.createElement("li");
     item.textContent = "还没有记录，先来一声哈基米。";
     historyList.append(item);
     return;
   }
 
-  history.forEach((record, index) => {
+  ranking.forEach((record, index) => {
     const item = document.createElement("li");
-    const level = getScoreLevel(record.similarity);
-    item.style.setProperty("--history-color", level.color);
+    item.style.setProperty("--history-color", getRankingColor(record));
+    const title = String(record?.hisLevelInfo?.title || record?.grade || "--").trim() || "--";
+    const score = Number.isFinite(Number(record.audioHis)) ? `HIS ${formatHisValue(record.audioHis)}` : `${Math.max(0, Math.min(100, Math.round(Number(record.similarity) || 0)))}%`;
     item.innerHTML = `
       <span>${index + 1}</span>
-      <strong>${record.similarity}%</strong>
-      <em>${record.grade}</em>
-      <small>${formatHistoryTime(record.createdAt)}</small>
+      <strong>${score}</strong>
+      <em>${title}</em>
+      <small>${formatHistoryTime(record.createdAt || Date.now())}</small>
     `;
     historyList.append(item);
   });
@@ -577,7 +752,6 @@ async function uploadAudio() {
         message = payload.error;
       }
     } catch (error) {
-      // Ignore JSON parse errors and keep the HTTP status message.
     }
     throw new Error(message);
   }
@@ -700,12 +874,22 @@ function renderResult(result) {
   finalComment.textContent = result.comment;
   renderPersonality(result);
   renderReasons(result.reasons);
+  renderHisLevel(result);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
   latestShareCopy = buildShareCopy(result);
   shareText.textContent = latestShareCopy;
-  saveHistory(result);
+  if (navSettlement) {
+    navSettlement.disabled = false;
+  }
+  const run = addRun(result);
   generateShareImage(result);
+  updateNavLocks();
+  const unlocked = evaluateAchievements(run);
+  if (unlocked.length) {
+    openAchievementModal(unlocked);
+  }
+  renderAchievements();
   showSettlementPage();
 }
 
@@ -738,6 +922,506 @@ function renderReasons(reasons) {
     item.textContent = reason;
     reasonList.append(item);
   }
+}
+
+function renderHisLevel(result) {
+  const info = result?.hisLevelInfo;
+  const title = String(info?.title || "").trim();
+  const color = String(info?.color || "").trim();
+  const desc = String(info?.desc || "").trim();
+  const hint = String(info?.hint || "").trim();
+  const his = Number(result?.audioHis);
+
+  if (!info || (!title && !desc && !hint && !Number.isFinite(his))) {
+    hisBox.hidden = true;
+    return;
+  }
+
+  hisBox.hidden = false;
+  hisTag.textContent = title || "未知等级";
+  hisTag.style.background = color || "var(--teal)";
+  hisValue.textContent = Number.isFinite(his) ? `HIS ${formatHisValue(his)}` : "HIS --";
+  hisDesc.textContent = desc || "—";
+  hisHint.textContent = hint || "—";
+}
+
+function updateNavLocks() {
+  const hasRuns = getRuns().length > 0;
+  if (navAchievements) {
+    navAchievements.disabled = !hasRuns;
+  }
+  if (navProfile) {
+    navProfile.disabled = !hasRuns;
+  }
+  if (navSettlement) {
+    navSettlement.disabled = !latestResult;
+  }
+}
+
+function getAchievementState() {
+  const parsed = safeJsonParse(localStorage.getItem(achievementsKey), {});
+  const unlocked = parsed && typeof parsed === "object" && parsed.unlocked && typeof parsed.unlocked === "object" ? parsed.unlocked : {};
+  const seen = parsed && typeof parsed === "object" && parsed.seen && typeof parsed.seen === "object" ? parsed.seen : {};
+  return { unlocked: { ...unlocked }, seen: { ...seen } };
+}
+
+function setAchievementState(state) {
+  localStorage.setItem(achievementsKey, JSON.stringify(state));
+}
+
+function getNonHiddenPersonalityCodes(runs) {
+  const hidden = new Set(["SILENT", "MEOOOW"]);
+  const output = new Set();
+  runs.forEach((run) => {
+    const code = String(run?.personalityCode || "").trim();
+    if (!code || hidden.has(code)) {
+      return;
+    }
+    output.add(code);
+  });
+  return Array.from(output);
+}
+
+function buildStats(runs) {
+  const totalRecordings = runs.length;
+  const bestSimilarity = runs.reduce((max, run) => Math.max(max, Number(run?.similarity) || 0), 0);
+  const bestHisRun = runs
+    .filter((run) => Number.isFinite(Number(run?.audioHis)))
+    .reduce((best, run) => {
+      const value = Number(run.audioHis);
+      if (!best) {
+        return run;
+      }
+      return value > Number(best.audioHis) ? run : best;
+    }, null);
+
+  const bestAudioHis = bestHisRun && Number.isFinite(Number(bestHisRun.audioHis)) ? Number(bestHisRun.audioHis) : null;
+  const personalityHistory = getNonHiddenPersonalityCodes(runs);
+  return { totalRecordings, bestSimilarity, bestAudioHis, bestHisRun, personalityHistory };
+}
+
+function meetsAchievementCondition(id, run, stats) {
+  const his = Number(run?.audioHis);
+  const peakFreq = Number(run?.peakFreq);
+  const activeDuration = Number(run?.activeDuration);
+  const freqVariance = Number(run?.freqVariance);
+  const volumeVariance = Number(run?.volumeVariance);
+  const dominantFreq = Number(run?.dominantFreq);
+  const avgDB = Number(run?.avgDB);
+  const hour = new Date(Number(run?.createdAt) || Date.now()).getHours();
+
+  if (id === "first_hiss") return stats.totalRecordings >= 1;
+  if (id === "hiss_3") return stats.totalRecordings >= 3;
+  if (id === "hiss_10") return stats.totalRecordings >= 10;
+  if (id === "hiss_100") return stats.totalRecordings >= 100;
+  if (id === "breaker") return Number.isFinite(his) && his >= 3.0;
+  if (id === "defender") return Number.isFinite(his) && his >= 5.0;
+  if (id === "rage_cat") return Number.isFinite(his) && his >= 7.0;
+  if (id === "maodie_certified") return Number.isFinite(his) && his >= 9.0;
+  if (id === "beyond_maodie") return Number.isFinite(his) && his >= 10.0;
+  if (id === "high_pitch") return Number.isFinite(peakFreq) && peakFreq > 7000;
+  if (id === "endurance_king") return Number.isFinite(activeDuration) && activeDuration > 2.5;
+  if (id === "chaos_master") return Number.isFinite(freqVariance) && freqVariance > 2500;
+  if (id === "stable_output") return Number.isFinite(volumeVariance) && volumeVariance < 0.05 && Number.isFinite(activeDuration) && activeDuration > 1.0;
+  if (id === "bass_cannon") return Number.isFinite(dominantFreq) && dominantFreq < 2000 && Number.isFinite(avgDB) && avgDB > 50;
+  if (id === "type_collector") return stats.personalityHistory.length >= 8;
+  if (id === "air_master") return String(run?.personalityCode || "").trim() === "SILENT";
+  if (id === "midnight_hiss") return hour >= 0 && hour < 5;
+  if (id === "speed_star") return Number(run?.timeSinceOpenMs) > 0 && Number(run?.timeSinceOpenMs) <= 10_000;
+
+  return false;
+}
+
+function evaluateAchievements(run) {
+  if (!achievementsDefinition.length) {
+    return [];
+  }
+
+  const runs = getRuns();
+  const stats = buildStats(runs);
+  const state = getAchievementState();
+  const now = Date.now();
+  const unlockedNow = [];
+
+  achievementsDefinition.forEach((achievement) => {
+    const id = String(achievement?.id || "").trim();
+    if (!id || state.unlocked[id]) {
+      return;
+    }
+    if (meetsAchievementCondition(id, run, stats)) {
+      state.unlocked[id] = now;
+      unlockedNow.push(achievement);
+    }
+  });
+
+  if (unlockedNow.length) {
+    setAchievementState(state);
+  }
+
+  return unlockedNow;
+}
+
+function getAchievementBadgeStyle(achievement) {
+  const raw = String(achievement?.iconColor || "").trim();
+  if (!raw) {
+    return { background: "var(--teal)" };
+  }
+  if (raw.includes("彩虹")) {
+    return { background: "linear-gradient(90deg, #ff5f6d, #ffc371, #3a9f6f, #118a8a, #8a2be2)" };
+  }
+  if (raw.startsWith("#")) {
+    return { background: raw };
+  }
+  return { background: "var(--teal)" };
+}
+
+function renderAchievements() {
+  achievementsGrid.replaceChildren();
+  if (!achievementsDefinition.length) {
+    const empty = document.createElement("p");
+    empty.className = "lead";
+    empty.textContent = "成就数据加载失败，稍后再试。";
+    achievementsGrid.append(empty);
+    return;
+  }
+
+  const runs = getRuns();
+  const stats = buildStats(runs);
+  const state = getAchievementState();
+
+  achievementsDefinition.forEach((achievement) => {
+    const id = String(achievement?.id || "").trim();
+    const unlockedAt = state.unlocked[id] ? Number(state.unlocked[id]) : null;
+    const unlocked = Number.isFinite(unlockedAt);
+    const showBeforeUnlock = Boolean(achievement?.showBeforeUnlock);
+    if (!unlocked && !showBeforeUnlock) {
+      return;
+    }
+
+    const card = document.createElement("div");
+    card.className = `achievement-card${unlocked ? "" : " is-locked"}`;
+
+    const name = unlocked ? String(achievement?.name || "—") : String(achievement?.lockedName || "???");
+    const category = String(achievement?.category || "成就");
+    const description = String(achievement?.description || "");
+    const unlockedCopy = String(achievement?.relatedCopy?.unlocked || "").trim();
+    const detail = unlocked ? unlockedCopy || description : description || "未解锁";
+
+    let progressText = "";
+    const progress = achievement?.progress;
+    if (!unlocked && progress && typeof progress === "object") {
+      const currentKey = String(progress.currentKey || "").trim();
+      const target = Number(progress.target);
+      let current = 0;
+      if (currentKey === "totalRecordings") current = stats.totalRecordings;
+      if (currentKey === "personalityHistory") current = stats.personalityHistory.length;
+      if (Number.isFinite(target) && target > 0) {
+        progressText = String(progress.template || "{current}").replace("{current}", String(Math.min(current, target)));
+      } else {
+        progressText = String(progress.template || "").replace("{current}", String(current));
+      }
+    }
+
+    const badgeStyle = getAchievementBadgeStyle(achievement);
+    const badgeText = unlocked ? "已解锁" : progressText || "未解锁";
+    const timeText = unlocked ? formatHistoryTime(unlockedAt) : category;
+
+    card.innerHTML = `
+      <div class="achievement-top">
+        <p class="achievement-name">${name}</p>
+        <span class="achievement-badge">${badgeText}</span>
+      </div>
+      <p class="achievement-desc">${detail}</p>
+      <div class="achievement-meta">
+        <span>${timeText}</span>
+        <span>${unlocked ? "✅" : "🔒"}</span>
+      </div>
+    `;
+    const badge = card.querySelector(".achievement-badge");
+    if (badge) {
+      Object.assign(badge.style, badgeStyle);
+    }
+
+    achievementsGrid.append(card);
+  });
+}
+
+function openAchievementModal(items) {
+  const state = getAchievementState();
+  achievementModalList.replaceChildren();
+  const ids = [];
+  items.forEach((achievement) => {
+    const id = String(achievement?.id || "").trim();
+    if (!id) {
+      return;
+    }
+    ids.push(id);
+    const li = document.createElement("li");
+    const name = String(achievement?.name || "成就");
+    const copy = String(achievement?.relatedCopy?.unlocked || achievement?.description || "").trim();
+    li.innerHTML = `<strong>${name}</strong>：${copy || "已解锁"}`;
+    achievementModalList.append(li);
+  });
+
+  if (!ids.length) {
+    return;
+  }
+
+  achievementModal.hidden = false;
+  achievementModal.setAttribute("aria-hidden", "false");
+  const close = () => {
+    const next = getAchievementState();
+    ids.forEach((id) => {
+      next.seen[id] = Date.now();
+    });
+    setAchievementState(next);
+    achievementModal.hidden = true;
+    achievementModal.setAttribute("aria-hidden", "true");
+    renderAchievements();
+    updateNavLocks();
+  };
+
+  achievementModalClose.onclick = close;
+  achievementModalOk.onclick = close;
+  achievementModal.onclick = (event) => {
+    if (event.target === achievementModal) {
+      close();
+    }
+  };
+}
+
+function renderRanking() {
+  const mode = String(rankingMode?.value || "total");
+  const runs = getRuns();
+  const hasData = runs.length > 0;
+  rankingList.replaceChildren();
+
+  if (!hasData) {
+    const item = document.createElement("li");
+    item.className = "empty";
+    item.textContent = "还没有记录，先测一次再来看看。";
+    rankingList.append(item);
+    rankingHint.textContent = "总榜按 HIS 排序；分榜为最小可用展示，不足时会回退到总榜。";
+    return;
+  }
+
+  const totalSorted = runs
+    .slice()
+    .sort((a, b) => (Number(b.audioHis) || -1) - (Number(a.audioHis) || -1) || (Number(b.similarity) || 0) - (Number(a.similarity) || 0) || (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+
+  const renderList = (list, hint) => {
+    rankingHint.textContent = hint;
+    list.slice(0, 30).forEach((run, index) => {
+      const li = document.createElement("li");
+      li.style.setProperty("--history-color", getRankingColor(run));
+      const hisText = Number.isFinite(Number(run.audioHis)) ? `HIS ${formatHisValue(Number(run.audioHis))}` : "HIS --";
+      const title = String(run?.hisLevelInfo?.title || run?.grade || "--").trim() || "--";
+      const extra = `${Math.max(0, Math.min(100, Math.round(Number(run?.similarity) || 0)))}%`;
+      li.innerHTML = `
+        <span class="rank">#${index + 1}</span>
+        <span class="score">${hisText}</span>
+        <span class="title">${title}</span>
+        <span class="meta">${extra} · ${formatHistoryTime(Number(run?.createdAt) || Date.now())}</span>
+      `;
+      rankingList.append(li);
+    });
+  };
+
+  if (mode === "total") {
+    renderList(totalSorted, "总榜按 HIS 排序（同 HIS 时按相似度/时间）。");
+    return;
+  }
+
+  if (mode === "level") {
+    const bestByLevel = new Map();
+    totalSorted.forEach((run) => {
+      const level = Number(run?.hisLevelInfo?.hisLevel ?? run?.hisLevel);
+      if (!Number.isFinite(level)) {
+        return;
+      }
+      const existing = bestByLevel.get(level);
+      if (!existing || (Number(run.audioHis) || -1) > (Number(existing.audioHis) || -1)) {
+        bestByLevel.set(level, run);
+      }
+    });
+    const list = Array.from(bestByLevel.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map((entry) => entry[1]);
+    if (list.length < 2) {
+      renderList(totalSorted, "分榜数据不足，已回退到总榜（按 HIS）。");
+      return;
+    }
+    renderList(list, "分榜（按等级）：每个等级取本机最高 HIS 的一条记录。");
+    return;
+  }
+
+  if (mode === "personality") {
+    const bestByCode = new Map();
+    totalSorted.forEach((run) => {
+      const code = String(run?.personalityCode || "").trim();
+      if (!code) {
+        return;
+      }
+      const existing = bestByCode.get(code);
+      if (!existing || (Number(run.audioHis) || -1) > (Number(existing.audioHis) || -1)) {
+        bestByCode.set(code, run);
+      }
+    });
+    const list = Array.from(bestByCode.values()).sort((a, b) => (Number(b.audioHis) || -1) - (Number(a.audioHis) || -1));
+    if (list.length < 2) {
+      renderList(totalSorted, "分榜数据不足，已回退到总榜（按 HIS）。");
+      return;
+    }
+    renderList(list, "分榜（按人格）：每个人格取本机最高 HIS 的一条记录。");
+  }
+}
+
+function renderProfile() {
+  const runs = getRuns();
+  const stats = buildStats(runs);
+
+  profileTotal.textContent = String(stats.totalRecordings);
+  profileBestSimilarity.textContent = stats.bestSimilarity ? `${Math.round(stats.bestSimilarity)}%` : "--";
+
+  if (Number.isFinite(stats.bestAudioHis)) {
+    const title = String(stats.bestHisRun?.hisLevelInfo?.title || "").trim();
+    profileBestHis.textContent = title ? `${formatHisValue(stats.bestAudioHis)} · ${title}` : formatHisValue(stats.bestAudioHis);
+  } else {
+    profileBestHis.textContent = "--";
+  }
+
+  const latest = runs[0];
+  if (!latest) {
+    profileLatest.textContent = "还没有记录。";
+    profileLatestSub.textContent = "";
+  } else {
+    const hisText = Number.isFinite(Number(latest.audioHis)) ? `HIS ${formatHisValue(Number(latest.audioHis))}` : "HIS --";
+    const title = String(latest?.hisLevelInfo?.title || latest?.grade || "--").trim() || "--";
+    profileLatest.textContent = `${hisText} · ${title}`;
+    profileLatestSub.textContent = `${Math.max(0, Math.min(100, Math.round(Number(latest?.similarity) || 0)))}% · ${formatHistoryTime(Number(latest.createdAt) || Date.now())}`;
+  }
+
+  const personas = new Map();
+  runs.forEach((run) => {
+    const code = String(run?.personalityCode || "").trim();
+    if (!code) {
+      return;
+    }
+    const name = String(run?.personalityProfile?.name || "").trim();
+    const label = name ? `${code} ${name}` : code;
+    if (!personas.has(code)) {
+      personas.set(code, label);
+    }
+  });
+
+  profilePersonaChips.replaceChildren();
+  if (!personas.size) {
+    const empty = document.createElement("p");
+    empty.className = "info-sub";
+    empty.textContent = "还没有人格记录。";
+    profilePersonaChips.append(empty);
+  } else {
+    Array.from(personas.values())
+      .sort((a, b) => a.localeCompare(b, "zh-CN"))
+      .forEach((label) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = label;
+        profilePersonaChips.append(chip);
+      });
+  }
+
+  profileRecentList.replaceChildren();
+  runs.slice(0, 6).forEach((run) => {
+    const li = document.createElement("li");
+    const hisText = Number.isFinite(Number(run.audioHis)) ? `HIS ${formatHisValue(Number(run.audioHis))}` : "HIS --";
+    const title = String(run?.hisLevelInfo?.title || run?.grade || "--").trim() || "--";
+    const extra = `${Math.max(0, Math.min(100, Math.round(Number(run?.similarity) || 0)))}% · ${formatHistoryTime(Number(run?.createdAt) || Date.now())}`;
+    li.innerHTML = `<strong>${hisText} · ${title}</strong><span>${extra}</span>`;
+    profileRecentList.append(li);
+  });
+}
+
+async function loadAchievementsDefinition() {
+  if (achievementsDefinition.length) {
+    return achievementsDefinition;
+  }
+  try {
+    const response = await fetch("./data/achievements.v1.json");
+    if (!response.ok) {
+      return [];
+    }
+    const payload = await response.json();
+    achievementsDefinition = Array.isArray(payload?.achievements) ? payload.achievements : [];
+  } catch (error) {
+    achievementsDefinition = [];
+  }
+  return achievementsDefinition;
+}
+
+function openConfirmModal(options) {
+  if (!options || typeof options !== "object") {
+    return;
+  }
+
+  const titleEl = document.querySelector("#confirmModalTitle");
+  const copyEl = document.querySelector("#confirmModalCopy");
+  if (titleEl) {
+    titleEl.textContent = String(options.title || "确认操作");
+  }
+  if (copyEl) {
+    copyEl.textContent = String(options.copy || "");
+  }
+
+  pendingConfirmAction = typeof options.onConfirm === "function" ? options.onConfirm : null;
+  confirmModal.hidden = false;
+  confirmModal.setAttribute("aria-hidden", "false");
+
+  const close = () => {
+    confirmModal.hidden = true;
+    confirmModal.setAttribute("aria-hidden", "true");
+    pendingConfirmAction = null;
+  };
+
+  confirmModalClose.onclick = close;
+  confirmModalCancel.onclick = close;
+  confirmModalConfirm.onclick = () => {
+    const action = pendingConfirmAction;
+    close();
+    action?.();
+  };
+  confirmModal.onclick = (event) => {
+    if (event.target === confirmModal) {
+      close();
+    }
+  };
+}
+
+function clearRunsOnly() {
+  localStorage.removeItem(runsKey);
+  localStorage.removeItem(legacyHistoryKey);
+  latestResult = null;
+  updateNavLocks();
+  renderSettlementHistory();
+  renderRanking();
+  renderProfile();
+  renderAchievements();
+  if (currentView === "settlement") {
+    showEntryPage();
+  }
+}
+
+function clearAllLocalData() {
+  localStorage.removeItem(runsKey);
+  localStorage.removeItem(legacyHistoryKey);
+  localStorage.removeItem(achievementsKey);
+  latestResult = null;
+  updateNavLocks();
+  renderSettlementHistory();
+  renderRanking();
+  renderProfile();
+  renderAchievements();
+  resetAudio();
 }
 
 shareButton.addEventListener("click", async () => {
@@ -788,11 +1472,94 @@ qqShareButton.addEventListener("click", () => openPlatformShare("qq"));
 weiboShareButton.addEventListener("click", () => openPlatformShare("weibo"));
 
 clearHistoryButton.addEventListener("click", () => {
-  localStorage.removeItem(historyKey);
-  renderHistory();
+  openConfirmModal({
+    title: "确认清除本地数据",
+    copy: "这会清除本机历史、成就解锁与档案统计，且不可恢复。",
+    onConfirm: clearAllLocalData
+  });
 });
 
 againButton.addEventListener("click", resetAudio);
 
-renderHistory();
-resetAudio();
+document.querySelectorAll(".nav-btn").forEach((button) => {
+  button.addEventListener("click", () => {
+    const view = String(button.dataset.view || "stage");
+    if (button.disabled) {
+      return;
+    }
+    showView(view);
+    if (view === "ranking") {
+      renderRanking();
+    }
+    if (view === "achievements") {
+      renderAchievements();
+    }
+    if (view === "profile") {
+      renderProfile();
+    }
+  });
+});
+
+if (rankingMode) {
+  rankingMode.addEventListener("change", renderRanking);
+}
+
+if (rankingClearButton) {
+  rankingClearButton.addEventListener("click", () => {
+    openConfirmModal({
+      title: "确认清除本地数据",
+      copy: "这会清除本机历史、成就解锁与档案统计，且不可恢复。",
+      onConfirm: clearAllLocalData
+    });
+  });
+}
+
+if (profileClearButton) {
+  profileClearButton.addEventListener("click", () => {
+    openConfirmModal({
+      title: "确认清除本地数据",
+      copy: "这会清除本机历史、成就解锁与档案统计，且不可恢复。",
+      onConfirm: clearAllLocalData
+    });
+  });
+}
+
+if (achievementsResetSeenButton) {
+  achievementsResetSeenButton.addEventListener("click", () => {
+    const state = getAchievementState();
+    state.seen = {};
+    setAchievementState(state);
+    renderAchievements();
+    const unseen = getUnseenUnlockedAchievements();
+    if (unseen.length) {
+      openAchievementModal(unseen);
+    }
+  });
+}
+
+function getUnseenUnlockedAchievements() {
+  if (!achievementsDefinition.length) {
+    return [];
+  }
+  const state = getAchievementState();
+  const ids = Object.keys(state.unlocked || {}).filter((id) => !state.seen?.[id]);
+  return ids
+    .map((id) => achievementsDefinition.find((item) => String(item?.id || "").trim() === id))
+    .filter(Boolean);
+}
+
+async function init() {
+  await loadAchievementsDefinition();
+  renderSettlementHistory();
+  renderRanking();
+  renderProfile();
+  renderAchievements();
+  updateNavLocks();
+  const unseen = getUnseenUnlockedAchievements();
+  if (unseen.length) {
+    openAchievementModal(unseen);
+  }
+  resetAudio();
+}
+
+init();

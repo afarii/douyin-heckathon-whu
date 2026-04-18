@@ -50,6 +50,19 @@ def test_upload_api_returns_score() -> None:
         assert payload["mode"] == "reference"
         assert payload["reasons"]
         assert payload["details"]["bandSimilarity"] >= 0
+        assert 0.0 <= payload["audioHis"] <= 10.0
+        assert 1 <= payload["hisLevel"] <= 9
+        assert payload["hisLevelInfo"]["hisLevel"] == payload["hisLevel"]
+        assert payload["hisLevelInfo"]["title"]
+        assert payload["hisLevelInfo"]["color"].startswith("#")
+        assert payload["hisLevelInfo"]["desc"]
+        assert payload["hisLevelInfo"]["hint"]
+        assert payload["peakFreq"] >= 0.0
+        assert payload["activeDuration"] >= 0.0
+        assert payload["freqVariance"] >= 0.0
+        assert 0.0 <= payload["volumeVariance"] <= 1.0
+        assert payload["dominantFreq"] >= 0.0
+        assert payload["avgDB"] >= 0.0
     finally:
         server.shutdown()
         server.server_close()

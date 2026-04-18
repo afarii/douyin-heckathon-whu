@@ -13,6 +13,7 @@ from audio_similarity import analyze_upload
 from hajimi_ti_catalog import get_personality_by_code
 from hajimi_ti_features import extract_feature_vector_from_wav
 from hajimi_ti_judge import judge
+from his_levels import build_his_level_mapping, normalize_audio_his
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,8 +45,11 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                 reference_path = reference_temp_path
 
             result = analyze_upload(temp_path, reference_path)
-            judge_result = judge(extract_feature_vector_from_wav(temp_path))
+            features = extract_feature_vector_from_wav(temp_path)
+            judge_result = judge(features)
             profile = get_personality_by_code(judge_result.personalityCode)
+            audio_his = normalize_audio_his(features.hisStrength)
+            his_level_info = build_his_level_mapping(audio_his)
             self._json(
                 {
                     "similarity": result.similarity,
@@ -55,6 +59,15 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                     "confidence": result.confidence,
                     "reasons": list(result.reasons),
                     "details": result.details,
+                    "audioHis": audio_his,
+                    "hisLevel": his_level_info["hisLevel"],
+                    "hisLevelInfo": his_level_info,
+                    "peakFreq": features.peakFreq,
+                    "activeDuration": features.activeDuration,
+                    "freqVariance": features.freqVariance,
+                    "volumeVariance": features.volumeVariance,
+                    "dominantFreq": features.dominantFreq,
+                    "avgDB": features.avgDB,
                     "personalityCode": judge_result.personalityCode,
                     "personalityMatch": judge_result.personalityMatch,
                     "dimensionMatches": [

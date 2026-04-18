@@ -8,6 +8,16 @@
   </head>
   <body>
     <main class="app">
+      <header class="topbar" aria-label="页面导航">
+        <div class="topbar-inner">
+          <button class="nav-btn is-active" id="navStage" type="button" data-view="stage">检测</button>
+          <button class="nav-btn" id="navSettlement" type="button" data-view="settlement" disabled>结算</button>
+          <button class="nav-btn" id="navRanking" type="button" data-view="ranking">排行榜</button>
+          <button class="nav-btn" id="navAchievements" type="button" data-view="achievements" disabled>成就</button>
+          <button class="nav-btn" id="navProfile" type="button" data-view="profile" disabled>我的档案</button>
+        </div>
+      </header>
+
       <section class="stage" aria-labelledby="page-title">
         <div class="intro">
           <img class="mascot" src="./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E9%AB%98%E6%B8%85%E5%9F%BA%E7%B1%B3.png" alt="哈基米猫咪" />
@@ -123,6 +133,18 @@
             <h2 id="finalGrade">等待揭晓</h2>
           </div>
 
+          <div class="his-box" id="hisBox" hidden>
+            <div class="his-head">
+              <p>HIS 等级</p>
+              <div class="his-meta">
+                <span class="his-tag" id="hisTag">--</span>
+                <span class="his-value" id="hisValue">HIS --</span>
+              </div>
+            </div>
+            <p class="his-desc" id="hisDesc">--</p>
+            <p class="his-hint" id="hisHint">--</p>
+          </div>
+
           <p class="settlement-comment" id="finalComment">录音完成后，哈基米宇宙会给你一个答案。</p>
 
           <div class="reason-box" id="personalityBox" aria-labelledby="personality-title" hidden>
@@ -171,6 +193,117 @@
           </div>
         </div>
       </section>
+
+      <section class="page" id="rankingPage" aria-labelledby="ranking-title" hidden>
+        <div class="page-card">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Local Ranking</p>
+              <h1 id="ranking-title">本地排行榜</h1>
+            </div>
+            <div class="page-actions">
+              <label class="select">
+                <span>视图</span>
+                <select id="rankingMode">
+                  <option value="total">总榜（按 HIS）</option>
+                  <option value="level">分榜（按等级）</option>
+                  <option value="personality">分榜（按人格）</option>
+                </select>
+              </label>
+              <button class="secondary" id="rankingClearButton" type="button">清除本地数据</button>
+            </div>
+          </div>
+          <p class="lead" id="rankingHint">总榜按 HIS 排序；分榜为最小可用展示，不足时会回退到总榜。</p>
+          <ol class="rank-list" id="rankingList">
+            <li class="empty">还没有记录，先测一次再来看看。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="page" id="achievementsPage" aria-labelledby="achievements-title" hidden>
+        <div class="page-card">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Achievements</p>
+              <h1 id="achievements-title">成就</h1>
+            </div>
+            <button class="secondary" id="achievementsResetSeenButton" type="button">清除弹窗已读</button>
+          </div>
+          <p class="lead">成就基于单次结果 + 本机历史统计解锁，数据保存在本地浏览器。</p>
+          <div class="achievements-grid" id="achievementsGrid"></div>
+        </div>
+      </section>
+
+      <section class="page" id="profilePage" aria-labelledby="profile-title" hidden>
+        <div class="page-card">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">My Archive</p>
+              <h1 id="profile-title">我的档案</h1>
+            </div>
+            <button class="secondary" id="profileClearButton" type="button">清除本地数据</button>
+          </div>
+
+          <div class="profile-grid">
+            <div class="info-card">
+              <p class="info-title">统计</p>
+              <div class="info-kv">
+                <div><span>次数</span><strong id="profileTotal">0</strong></div>
+                <div><span>最佳 HIS</span><strong id="profileBestHis">--</strong></div>
+                <div><span>最佳相似度</span><strong id="profileBestSimilarity">--</strong></div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <p class="info-title">最近一次</p>
+              <p class="info-main" id="profileLatest">还没有记录。</p>
+              <p class="info-sub" id="profileLatestSub"></p>
+            </div>
+
+            <div class="info-card">
+              <p class="info-title">人格收集</p>
+              <p class="info-sub">按本机历史统计；仅展示已出现的人格。</p>
+              <div class="chips" id="profilePersonaChips"></div>
+            </div>
+
+            <div class="info-card">
+              <p class="info-title">最近记录</p>
+              <ol class="mini-list" id="profileRecentList"></ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="modal" id="achievementModal" hidden aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-labelledby="achievementModalTitle" aria-modal="true">
+          <div class="modal-head">
+            <h2 id="achievementModalTitle">成就解锁</h2>
+            <button class="text-button" id="achievementModalClose" type="button">关闭</button>
+          </div>
+          <div class="modal-body">
+            <ul class="modal-list" id="achievementModalList"></ul>
+          </div>
+          <div class="modal-actions">
+            <button class="primary full" id="achievementModalOk" type="button">我知道了</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="confirmModal" hidden aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-labelledby="confirmModalTitle" aria-modal="true">
+          <div class="modal-head">
+            <h2 id="confirmModalTitle">确认清除数据</h2>
+            <button class="text-button" id="confirmModalClose" type="button">取消</button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-copy" id="confirmModalCopy">这会清除本机历史、成就解锁与档案统计，且不可恢复。</p>
+          </div>
+          <div class="modal-actions two">
+            <button class="secondary" id="confirmModalCancel" type="button">不清除</button>
+            <button class="primary" id="confirmModalConfirm" type="button">确认清除</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script src="./app.js"></script>
