@@ -169,10 +169,10 @@ def compare_features(uploaded: AudioFeatures, reference: AudioFeatures) -> tuple
         "tempoHz": round(uploaded.tempo_hz, 2),
     }
     reasons = [
-        f"音色频带相似度约 {round(band_similarity * 100)}%，决定声音像不像示例。",
-        f"节奏轮廓相似度约 {round(contour_similarity * 100)}%，用于判断哈气起伏是否贴近。",
-        f"嘶嘶感接近度约 {round(zcr_similarity * 100)}%，用于区分哈气和普通说话/音乐。",
-        f"有效时长接近度约 {round(duration_similarity * 100)}%，避免长音频或过短片段误判。",
+        _quality_reason("音色", band_similarity, "声音频带与示例接近，哈气质感较容易被识别。", "声音频带与示例仍有距离，听感上会偏离参考素材。"),
+        _quality_reason("节奏", contour_similarity, "起伏轮廓贴近示例，短促停顿比较稳定。", "起伏轮廓不够贴近示例，短促感需要更集中。"),
+        _quality_reason("气声", zcr_similarity, "气声颗粒较清楚，和普通说话声区分明显。", "气声颗粒不够明显，容易被判断为普通声音。"),
+        _quality_reason("时长", duration_similarity, "有效片段长度合适，没有明显拖长或过短。", "有效片段长度和示例差距较大，会影响整体判断。"),
         _pitch_reason(uploaded.pitch_hz, reference.pitch_hz, pitch_similarity),
         _tempo_reason(uploaded.tempo_hz, reference.tempo_hz, tempo_similarity),
     ]
@@ -207,10 +207,10 @@ def score_hachimi_likeness(features: AudioFeatures) -> tuple[float, list[str], d
         "activeRatio": round(features.active_ratio, 3),
     }
     reasons = [
-        "当前没有生成参考 WAV，系统使用哈基米启发式特征评分。",
-        f"音高约 {round(features.pitch_hz)}Hz，和短促明亮的哈气目标匹配度约 {round(pitch_match * 100)}%。",
-        f"节奏速度约 {round(features.tempo_hz, 1)}Hz，重复起伏匹配度约 {round(tempo_match * 100)}%。",
-        f"有效声音占比约 {round(features.active_ratio * 100)}%，用于降低静音和背景声影响。",
+        "当前未使用参考素材比对，系统依据短促、明亮、重复起伏等哈基米特征评估。",
+        _quality_reason("音高", pitch_match, "主音高度落在较合适的范围，听感偏明亮。", "主音高度偏离目标范围，哈气辨识度会下降。"),
+        _quality_reason("节奏", tempo_match, "重复起伏比较清楚，具备短促哈气的基本形态。", "重复起伏不够明显，节奏特征还不稳定。"),
+        _quality_reason("有效声音", active_match, "主体声音占比充足，静音和背景声影响较小。", "主体声音占比不足，静音或背景声可能影响判断。"),
     ]
     reasons.extend(cap_reasons)
     return score, reasons, details
@@ -305,18 +305,30 @@ def _apply_heuristic_caps(
     return min(score, cap), [reason]
 
 
+def _quality_reason(label: str, value: float, good: str, weak: str) -> str:
+    if value >= 0.78:
+        return f"{label}表现较好：{good}"
+    if value >= 0.52:
+        return f"{label}表现中等：{good}但稳定性还可以提升。"
+    return f"{label}表现偏弱：{weak}"
+
+
 def _pitch_reason(uploaded: float, reference: float, similarity: float) -> str:
     if uploaded <= 0 or reference <= 0:
         return "音高不够稳定，系统主要依据音色和节奏给分。"
-    direction = "更高" if uploaded > reference else "更低"
-    return f"你的主音高约 {round(uploaded)}Hz，比示例{direction}；音高接近度约 {round(similarity * 100)}%。"
+    if similarity >= 0.78:
+        return "音高与示例接近，整体听感没有明显偏高或偏低。"
+    direction = "偏高" if uploaded > reference else "偏低"
+    return f"音高相对示例{direction}，会让哈气的贴近度下降。"
 
 
 def _tempo_reason(uploaded: float, reference: float, similarity: float) -> str:
     if uploaded <= 0 or reference <= 0:
         return "节奏起伏不明显，建议模仿示例里的短促重复感。"
-    direction = "更快" if uploaded > reference else "更慢"
-    return f"你的节奏约 {round(uploaded, 1)}Hz，比示例{direction}；节奏接近度约 {round(similarity * 100)}%。"
+    if similarity >= 0.78:
+        return "节奏速度与示例接近，短促起落比较自然。"
+    direction = "偏快" if uploaded > reference else "偏慢"
+    return f"节奏相对示例{direction}，短促起落还需要再贴近。"
 
 
 def _remove_dc(samples: list[float]) -> list[float]:

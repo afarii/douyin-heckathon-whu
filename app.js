@@ -23,7 +23,6 @@ const finalGrade = document.querySelector("#finalGrade");
 const finalComment = document.querySelector("#finalComment");
 const shareText = document.querySelector("#shareText");
 const reasonList = document.querySelector("#reasonList");
-const metricList = document.querySelector("#metricList");
 const historyList = document.querySelector("#historyList");
 const clearHistoryButton = document.querySelector("#clearHistoryButton");
 const shareImage = document.querySelector("#shareImage");
@@ -228,18 +227,18 @@ function decorateResult(result) {
 
 function getLocalReasons(similarity) {
   if (similarity >= 85) {
-    return ["节奏和示例很接近，哈气起伏抓得很稳。", "音色足够明亮，听起来很像参考素材。", "有效声音占比高，几乎没有空白水分。"];
+    return ["节奏起伏与示例保持一致，短促感和停顿位置都比较稳定。", "声音亮度接近参考素材，主体哈气清楚，没有被环境声盖住。", "有效片段集中，录音长度和示例的表达方式匹配度较高。"];
   }
 
   if (similarity >= 60) {
-    return ["整体节奏已经有哈基米味道。", "音色和示例有相似部分，但尖锐度还可以再贴近。", "录音中有效声音足够用于判断。"];
+    return ["整体已经呈现出哈基米式的短促节奏，但部分起伏还不够贴近示例。", "音色方向基本相近，亮度和颗粒感仍有提升空间。", "录音主体足够清楚，系统可以较稳定地完成判断。"];
   }
 
   if (similarity >= 30) {
-    return ["能听到哈气动作，但节奏轮廓和示例还有差距。", "音高或明亮度不够接近参考素材。", "可以先播放示例，再模仿它的短促起伏。"];
+    return ["可以识别出哈气动作，但节奏轮廓与示例的差距较明显。", "声音的亮度、音高或颗粒感没有形成稳定的哈基米特征。", "建议缩短录制片段，重点模仿示例里的短促起落。"];
   }
 
-  return ["节奏、音色和示例差异都比较明显。", "有效哈气片段偏少或声音不够清晰。", "建议靠近麦克风，听一遍示例后重新录制。"];
+  return ["录音与示例在节奏和音色上都缺少稳定关联。", "有效哈气片段偏少，或主体声音被静音、说话声、背景声分散。", "建议靠近麦克风，只保留一段短促清晰的哈气后再检测。"];
 }
 
 function getBadgeText(similarity) {
@@ -341,67 +340,6 @@ function updateSettlementScore(value) {
   settlementScore.style.setProperty("--score-percent", `${safeValue}%`);
   settlementScore.style.setProperty("--score-color", level.color);
   settlementScore.dataset.level = level.name;
-}
-
-function toPercent(value, fallback) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return fallback;
-  }
-  return Math.max(0, Math.min(100, Math.round(value * 100)));
-}
-
-function average(values, fallback) {
-  const usable = values.filter((value) => typeof value === "number" && !Number.isNaN(value));
-  if (!usable.length) {
-    return fallback;
-  }
-  return usable.reduce((total, value) => total + value, 0) / usable.length;
-}
-
-function getMetricColor(value) {
-  if (value >= 85) {
-    return "var(--green)";
-  }
-
-  if (value >= 30) {
-    return "var(--yellow)";
-  }
-
-  return "var(--red)";
-}
-
-function buildMetrics(result) {
-  const details = result.details || {};
-  const fallback = result.similarity;
-  const timbre = toPercent(average([details.bandSimilarity, details.pitchSimilarity], fallback / 100), fallback);
-  const rhythm = toPercent(
-    average([details.contourSimilarity, details.tempoSimilarity, details.durationSimilarity], fallback / 100),
-    fallback
-  );
-  const clarity = toPercent(average([details.zcrSimilarity, details.activeRatio], fallback / 100), fallback);
-  const duration = toPercent(details.durationSimilarity, fallback);
-
-  return [
-    { label: "音色贴近", value: timbre },
-    { label: "节奏起伏", value: rhythm },
-    { label: "声音清晰", value: clarity },
-    { label: "时长匹配", value: duration }
-  ];
-}
-
-function renderMetrics(result) {
-  metricList.replaceChildren();
-  for (const metric of buildMetrics(result)) {
-    const item = document.createElement("div");
-    item.className = "metric-item";
-    item.style.setProperty("--metric-color", getMetricColor(metric.value));
-    item.innerHTML = `
-      <span>${metric.label}</span>
-      <strong>${metric.value}%</strong>
-      <div class="metric-track"><i style="width: ${metric.value}%"></i></div>
-    `;
-    metricList.append(item);
-  }
 }
 
 function getHistory() {
@@ -540,18 +478,16 @@ async function generateShareImage(result) {
   context.textAlign = "left";
   context.fillStyle = "#118a8a";
   context.font = "900 30px Microsoft YaHei, sans-serif";
-  context.fillText("评分拆解", 150, 960);
+  context.fillText("评分理由", 150, 940);
 
-  buildMetrics(result).forEach((metric, index) => {
-    const y = 1015 + index * 42;
+  context.fillStyle = "#646464";
+  context.font = "700 26px Microsoft YaHei, sans-serif";
+  result.reasons.slice(0, 3).forEach((reason, index) => {
+    const y = 995 + index * 72;
+    context.fillStyle = "#118a8a";
+    context.fillText(`${index + 1}.`, 150, y);
     context.fillStyle = "#646464";
-    context.font = "700 24px Microsoft YaHei, sans-serif";
-    context.fillText(metric.label, 150, y);
-    context.fillStyle = "#eadfce";
-    context.fillRect(300, y - 20, 360, 18);
-    context.fillStyle = getMetricColor(metric.value).replace("var(--green)", "#3a9f6f").replace("var(--yellow)", "#f2c14e").replace("var(--red)", "#d7263d");
-    context.fillRect(300, y - 20, 360 * (metric.value / 100), 18);
-    context.fillText(`${metric.value}%`, 690, y);
+    drawWrappedText(context, reason, 190, y, 560, 34, 2);
   });
 
   latestShareBlob = await new Promise((resolve) => shareCanvas.toBlob(resolve, "image/png"));
@@ -739,7 +675,6 @@ function renderResult(result) {
   finalScore.textContent = `${result.similarity}%`;
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
-  renderMetrics(result);
   renderReasons(result.reasons);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);

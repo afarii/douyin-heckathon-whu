@@ -548,7 +548,6 @@ h3 {
   text-align: left;
 }
 
-.metric-box,
 .history-box {
   max-width: 560px;
   margin: 0 auto 18px;
@@ -559,44 +558,10 @@ h3 {
   text-align: left;
 }
 
-.metric-box p,
 .history-head p {
   margin-bottom: 12px;
   color: var(--teal);
   font-weight: 900;
-}
-
-.metric-list {
-  display: grid;
-  gap: 12px;
-}
-
-.metric-item {
-  display: grid;
-  grid-template-columns: 92px 48px 1fr;
-  gap: 10px;
-  align-items: center;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.metric-item strong {
-  color: var(--ink);
-  text-align: right;
-}
-
-.metric-track {
-  height: 12px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #eadfce;
-}
-
-.metric-track i {
-  display: block;
-  height: 100%;
-  border-radius: 8px;
-  background: var(--metric-color, var(--teal));
 }
 
 .reason-box p {
@@ -773,14 +738,6 @@ h3 {
 
   .settlement-actions {
     grid-template-columns: 1fr;
-  }
-
-  .metric-item {
-    grid-template-columns: 1fr 48px;
-  }
-
-  .metric-track {
-    grid-column: 1 / -1;
   }
 
   .history-box li {
