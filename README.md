@@ -19,6 +19,13 @@
 .
 ├── assets/
 │   └── hachimi-cat.svg
+├── backend/
+│   ├── audio_similarity.py
+│   ├── server.py
+│   ├── test_audio_similarity.py
+│   ├── test_server_api.py
+│   └── reference/
+│       └── README.md
 ├── docs/
 │   └── prompt.md
 ├── app.js
@@ -30,10 +37,10 @@
 
 ## 本地运行
 
-项目当前是零依赖静态页面，可以直接用任意静态服务器启动。
+项目当前不需要安装第三方依赖。推荐用内置后端启动，它会同时提供静态页面和 `/api/upload` 接口。
 
 ```bash
-python -m http.server 4173 --bind 127.0.0.1
+python backend/server.py
 ```
 
 然后访问：
@@ -42,9 +49,15 @@ python -m http.server 4173 --bind 127.0.0.1
 http://127.0.0.1:4173/
 ```
 
+如需换端口：
+
+```bash
+$env:PORT=4180; python backend/server.py
+```
+
 > 录音能力依赖浏览器麦克风权限。建议通过 `localhost` 或 `127.0.0.1` 访问。
 
-## 后端接口约定
+## 后端接口
 
 前端会将音频通过 `FormData` 上传到：
 
@@ -69,6 +82,27 @@ audio
 ```
 
 如果接口不存在、请求失败或返回非 `2xx`，前端会自动进入 Mock 模式。
+
+后端会优先读取 `backend/reference/hachimi.wav` 作为参考音频。没有参考音频时，会进入启发式模式，根据短促、明亮、重复节奏等哈基米式声音特征评分。
+
+### 相似度方案
+
+后端会先把前端录音转换成 WAV，再读取 PCM 数据并进行预处理：
+
+* 重采样到 16kHz 单声道
+* 去除直流偏移和统一峰值音量
+* 使用能量阈值估计噪声底，只保留有效声音帧
+* 提取音高、过零率、频带能量、能量轮廓和节奏包络
+* 有参考音频时，使用频带余弦相似度、能量轮廓 DTW、音高/节奏比例相似度综合打分
+
+这样可以降低录音音量差异、静音片段、低频环境噪声和轻微节奏快慢差异对结果的影响。
+
+## 测试
+
+```bash
+python backend/test_audio_similarity.py
+python backend/test_server_api.py
+```
 
 ## 相关文档
 
