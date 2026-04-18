@@ -27,6 +27,9 @@ const personalityNameText = document.querySelector("#personalityName");
 const personalityTitleText = document.querySelector("#personalityTitleText");
 const personalityMatchText = document.querySelector("#personalityMatchText");
 const personalityFunCopyText = document.querySelector("#personalityFunCopy");
+const dimensionBox = document.querySelector("#dimensionBox");
+const dimensionTotal = document.querySelector("#dimensionTotal");
+const dimensionChips = document.querySelector("#dimensionBars");
 const shareText = document.querySelector("#shareText");
 const reasonList = document.querySelector("#reasonList");
 const historyList = document.querySelector("#historyList");
@@ -44,6 +47,7 @@ const navSettlement = document.querySelector("#navSettlement");
 const navRanking = document.querySelector("#navRanking");
 const navAchievements = document.querySelector("#navAchievements");
 const navProfile = document.querySelector("#navProfile");
+const topbarTablist = document.querySelector('[role="tablist"]');
 const rankingPage = document.querySelector("#rankingPage");
 const achievementsPage = document.querySelector("#achievementsPage");
 const profilePage = document.querySelector("#profilePage");
@@ -74,6 +78,7 @@ const confirmModal = document.querySelector("#confirmModal");
 const confirmModalClose = document.querySelector("#confirmModalClose");
 const confirmModalCancel = document.querySelector("#confirmModalCancel");
 const confirmModalConfirm = document.querySelector("#confirmModalConfirm");
+const toastHost = document.querySelector("#toastHost");
 
 let mediaRecorder;
 let stream;
@@ -110,6 +115,54 @@ const localComments = [
 ];
 
 let latestShareCopy = "";
+let currentScoreValue = null;
+
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
+function clampNumber(value, min, max) {
+  const safe = Number(value);
+  if (!Number.isFinite(safe)) {
+    return min;
+  }
+  return Math.max(min, Math.min(max, safe));
+}
+
+function animateValue({ from, to, durationMs, onUpdate, onComplete }) {
+  if (prefersReducedMotion() || durationMs <= 0) {
+    onUpdate(to);
+    onComplete?.();
+    return;
+  }
+
+  const start = performance.now();
+  const delta = to - from;
+
+  const tick = (now) => {
+    const progress = clampNumber((now - start) / durationMs, 0, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    onUpdate(from + delta * eased);
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      onComplete?.();
+    }
+  };
+
+  requestAnimationFrame(tick);
+}
+
+function applyViewEnter(section) {
+  if (!section) {
+    return;
+  }
+  section.classList.remove("view-enter");
+  requestAnimationFrame(() => {
+    section.classList.add("view-enter");
+    window.setTimeout(() => section.classList.remove("view-enter"), 420);
+  });
+}
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -157,6 +210,7 @@ function resetAudio() {
   timerText.textContent = "00:00";
   meter.classList.remove("recording");
   setStatus("准备就绪");
+  currentScoreValue = null;
   setScore(null);
   gradeText.textContent = "等待一声哈基米";
   commentText.textContent = "录音完成后点击检测，结果会在这里冒出来。";
@@ -166,6 +220,9 @@ function resetAudio() {
   personalityTitleText.textContent = "--";
   personalityMatchText.textContent = "--";
   personalityFunCopyText.textContent = "";
+  dimensionBox.hidden = true;
+  dimensionTotal.textContent = "--%";
+  dimensionChips.replaceChildren();
   shareImage.hidden = true;
   shareImage.removeAttribute("src");
   saveShareButton.disabled = true;
@@ -177,9 +234,8 @@ function resetAudio() {
   hisValue.textContent = "HIS --";
   hisDesc.textContent = "--";
   hisHint.textContent = "--";
-  if (navSettlement) {
-    navSettlement.disabled = true;
-  }
+  setTabDisabled(navSettlement, true);
+  updateNavLocks();
   showEntryPage();
 }
 
@@ -344,6 +400,33 @@ function buildShareCopy(result) {
   return `我刚测了哈基米浓度：${result.similarity}%｜${result.grade}。${result.comment}`;
 }
 
+function setTabDisabled(button, disabled) {
+  if (!button) {
+    return;
+  }
+  button.disabled = disabled;
+  button.setAttribute("aria-disabled", disabled ? "true" : "false");
+  if (disabled) {
+    button.setAttribute("tabindex", "-1");
+  }
+}
+
+function normalizeTargetView(view) {
+  const raw = String(view || "").trim();
+  const target = raw || "stage";
+  const hasRuns = getRuns().length > 0;
+  if (target === "settlement" && !latestResult) {
+    return "stage";
+  }
+  if ((target === "achievements" || target === "profile") && !hasRuns) {
+    return "stage";
+  }
+  if (target === "stage" || target === "settlement" || target === "ranking" || target === "achievements" || target === "profile") {
+    return target;
+  }
+  return "stage";
+}
+
 function setActiveNav(view) {
   const mapping = [
     [navStage, "stage"],
@@ -356,15 +439,19 @@ function setActiveNav(view) {
     if (!button) {
       return;
     }
-    button.classList.toggle("is-active", key === view);
+    const selected = key === view;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-selected", selected ? "true" : "false");
+    if (!button.disabled) {
+      button.setAttribute("tabindex", selected ? "0" : "-1");
+    } else {
+      button.setAttribute("tabindex", "-1");
+    }
   });
 }
 
 function showView(view) {
-  let target = view;
-  if (target === "settlement" && !latestResult) {
-    target = "stage";
-  }
+  const target = normalizeTargetView(view);
 
   currentView = target;
   stagePage.hidden = target !== "stage";
@@ -372,6 +459,17 @@ function showView(view) {
   rankingPage.hidden = target !== "ranking";
   achievementsPage.hidden = target !== "achievements";
   profilePage.hidden = target !== "profile";
+  applyViewEnter(
+    target === "stage"
+      ? stagePage
+      : target === "settlement"
+        ? settlementPage
+        : target === "ranking"
+          ? rankingPage
+          : target === "achievements"
+            ? achievementsPage
+            : profilePage
+  );
   setActiveNav(target);
 
   if (target !== "settlement") {
@@ -416,13 +514,24 @@ function setScore(value) {
     return;
   }
 
-  const safeValue = Math.max(0, Math.min(100, value));
-  const level = getScoreLevel(safeValue);
-  scoreText.textContent = `${safeValue}%`;
-  scoreRing.style.strokeDashoffset = ringLength - (ringLength * safeValue) / 100;
-  scoreRing.style.stroke = level.color;
-  scoreRing.dataset.level = level.name;
-  updateSettlementScore(safeValue);
+  const safeValue = clampNumber(value, 0, 100);
+  const from = Number.isFinite(currentScoreValue) ? currentScoreValue : 0;
+  currentScoreValue = safeValue;
+
+  animateValue({
+    from,
+    to: safeValue,
+    durationMs: 720,
+    onUpdate: (next) => {
+      const rounded = Math.round(clampNumber(next, 0, 100));
+      const level = getScoreLevel(rounded);
+      scoreText.textContent = `${rounded}%`;
+      scoreRing.style.strokeDashoffset = ringLength - (ringLength * rounded) / 100;
+      scoreRing.style.stroke = level.color;
+      scoreRing.dataset.level = level.name;
+      updateSettlementScore(rounded);
+    }
+  });
 }
 
 function updateSettlementScore(value) {
@@ -434,12 +543,20 @@ function updateSettlementScore(value) {
     return;
   }
 
-  const safeValue = Math.max(0, Math.min(100, value));
+  const safeValue = clampNumber(value, 0, 100);
   const level = getScoreLevel(safeValue);
   settlementCat.src = level.asset;
-  settlementScore.style.setProperty("--score-percent", `${safeValue}%`);
   settlementScore.style.setProperty("--score-color", level.color);
   settlementScore.dataset.level = level.name;
+
+  const existing = String(settlementScore.style.getPropertyValue("--score-percent") || "").trim();
+  const fromValue = Number(existing.replace("%", ""));
+  animateValue({
+    from: Number.isFinite(fromValue) ? fromValue : 0,
+    to: safeValue,
+    durationMs: 720,
+    onUpdate: (next) => settlementScore.style.setProperty("--score-percent", `${Math.round(clampNumber(next, 0, 100))}%`)
+  });
 }
 
 function safeJsonParse(value, fallback) {
@@ -593,6 +710,74 @@ function loadCanvasImage(src) {
   });
 }
 
+function parseColorToken(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (raw.startsWith("#")) {
+    return raw;
+  }
+  if (raw.includes("var(--green)")) {
+    return "#3a9f6f";
+  }
+  if (raw.includes("var(--yellow)")) {
+    return "#f2c14e";
+  }
+  if (raw.includes("var(--red)")) {
+    return "#d7263d";
+  }
+  if (raw.includes("var(--teal)")) {
+    return "#118a8a";
+  }
+  return raw;
+}
+
+function getReadableTextColor(hex) {
+  const raw = String(hex || "").trim();
+  if (!raw.startsWith("#") || (raw.length !== 7 && raw.length !== 4)) {
+    return "#171717";
+  }
+  const normalized =
+    raw.length === 4
+      ? `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`
+      : raw;
+  const r = parseInt(normalized.slice(1, 3), 16) / 255;
+  const g = parseInt(normalized.slice(3, 5), 16) / 255;
+  const b = parseInt(normalized.slice(5, 7), 16) / 255;
+  const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return l > 0.62 ? "#171717" : "#ffffff";
+}
+
+function hexToRgba(hex, alpha) {
+  const raw = String(hex || "").trim();
+  const normalized =
+    raw.length === 4
+      ? `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`
+      : raw;
+  if (!normalized.startsWith("#") || normalized.length !== 7) {
+    return `rgba(17, 17, 17, ${clampNumber(alpha, 0, 1)})`;
+  }
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${clampNumber(alpha, 0, 1)})`;
+}
+
+function roundRectPath(context, x, y, w, h, r) {
+  const radius = Math.max(0, Math.min(Math.min(w, h) / 2, Number(r) || 0));
+  if (context.roundRect) {
+    context.roundRect(x, y, w, h, radius);
+    return;
+  }
+  context.moveTo(x + radius, y);
+  context.arcTo(x + w, y, x + w, y + h, radius);
+  context.arcTo(x + w, y + h, x, y + h, radius);
+  context.arcTo(x, y + h, x, y, radius);
+  context.arcTo(x, y, x + w, y, radius);
+  context.closePath();
+}
+
 function drawWrappedText(context, text, x, y, maxWidth, lineHeight, maxLines = 3) {
   const chars = String(text).split("");
   const lines = [];
@@ -621,58 +806,152 @@ async function generateShareImage(result) {
   const context = shareCanvas.getContext("2d");
   const width = shareCanvas.width;
   const height = shareCanvas.height;
+  const profile = result?.personalityProfile || {};
+  const name = String(profile?.name || "").trim() || String(result?.grade || "—");
+  const title = String(profile?.title || "").trim();
+  const code = String(profile?.code || result?.personalityCode || "").trim();
+  const emoji = String(profile?.emoji || "🐱").trim();
+  const funCopy = String(profile?.funCopy || result?.comment || "").trim();
+  const tags = Array.isArray(profile?.tags) ? profile.tags : [];
+  const portrait = profile?.portrait6d && typeof profile.portrait6d === "object" ? profile.portrait6d : {};
+  const hisTitle = String(result?.hisLevelInfo?.title || "").trim();
+  const hisValue = Number.isFinite(Number(result?.audioHis)) ? Number(result.audioHis) : null;
+  const personalityMatchValue = Number.isFinite(Number(result?.personalityMatch))
+    ? clampNumber(Number(result.personalityMatch), 0, 100)
+    : null;
+
   const level = getScoreLevel(result.similarity);
-  const image = await loadCanvasImage(level.asset);
+  const personaTheme = String(profile?.themeColor || "").trim();
+  const accent = parseColorToken(personaTheme || level.color) || "#118a8a";
+  const accentText = getReadableTextColor(accent);
+  const accentSoft = hexToRgba(accent, 0.14);
+  const accentSoft2 = hexToRgba(accent, 0.08);
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = "#fffaf2";
   context.fillRect(0, 0, width, height);
-  context.fillStyle = "#eefbfa";
-  context.fillRect(42, 42, width - 84, height - 84);
-  context.fillStyle = "#ffffff";
-  context.fillRect(78, 78, width - 156, height - 156);
 
-  if (image) {
-    const size = 320;
-    context.save();
-    context.beginPath();
-    context.roundRect(290, 120, size, size, 24);
-    context.clip();
-    context.drawImage(image, 290, 120, size, size);
-    context.restore();
-  }
+  const frame = 34;
+  const cardX = frame;
+  const cardY = frame;
+  const cardW = width - frame * 2;
+  const cardH = height - frame * 2;
+
+  context.save();
+  context.beginPath();
+  roundRectPath(context, cardX, cardY, cardW, cardH, 36);
+  context.clip();
+
+  const bg = context.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+  bg.addColorStop(0, accentSoft);
+  bg.addColorStop(0.62, "rgba(255, 250, 242, 0)");
+  bg.addColorStop(1, accentSoft2);
+  context.fillStyle = bg;
+  context.fillRect(cardX, cardY, cardW, cardH);
+
+  context.fillStyle = "#ffffff";
+  context.globalAlpha = 0.88;
+  context.fillRect(cardX + 18, cardY + 18, cardW - 36, cardH - 36);
+  context.globalAlpha = 1;
+
+  context.textAlign = "left";
+  context.fillStyle = "#171717";
+  context.font = "900 26px Microsoft YaHei, sans-serif";
+  context.fillText("哈气模拟器", cardX + 56, cardY + 74);
+  context.fillStyle = "#8b7355";
+  context.font = "700 20px Microsoft YaHei, sans-serif";
+  context.fillText("Hajimi Type · 人格与特性", cardX + 56, cardY + 108);
+
+  context.textAlign = "center";
+  context.fillStyle = "#171717";
+  context.font = "900 90px Microsoft YaHei, sans-serif";
+  context.fillText(emoji, width / 2, cardY + 240);
 
   context.fillStyle = "#171717";
   context.font = "900 54px Microsoft YaHei, sans-serif";
-  context.textAlign = "center";
-  context.fillText("我的哈基米结算单", width / 2, 520);
+  context.fillText(`「${name}」`, width / 2, cardY + 330);
 
-  context.fillStyle = level.color.replace("var(--green)", "#3a9f6f").replace("var(--yellow)", "#f2c14e").replace("var(--red)", "#d7263d");
-  context.font = "900 132px Microsoft YaHei, sans-serif";
-  context.fillText(`${result.similarity}%`, width / 2, 665);
+  context.fillStyle = "#8b7355";
+  context.font = "800 26px Microsoft YaHei, sans-serif";
+  context.fillText(title || "—", width / 2, cardY + 372);
 
   context.fillStyle = "#171717";
-  context.font = "900 46px Microsoft YaHei, sans-serif";
-  context.fillText(result.grade, width / 2, 735);
+  context.font = "900 28px Microsoft YaHei, sans-serif";
+  const codeLine = [code ? `代号 ${code}` : null, personalityMatchValue === null ? null : `匹配度 ${Math.round(personalityMatchValue)}%`, hisTitle ? `HIS ${hisTitle}` : null]
+    .filter(Boolean)
+    .join("  ·  ");
+  context.fillText(codeLine || "—", width / 2, cardY + 422);
 
-  context.fillStyle = "#646464";
-  context.font = "700 30px Microsoft YaHei, sans-serif";
-  drawWrappedText(context, result.comment, width / 2, 800, 620, 44, 3);
+  if (hisValue !== null) {
+    context.fillStyle = accent;
+    context.font = "900 34px Microsoft YaHei, sans-serif";
+    context.fillText(`HIS ${hisValue.toFixed(1)}`, width / 2, cardY + 472);
+  }
 
+  const textX = cardX + 74;
+  const textW = cardW - 148;
   context.textAlign = "left";
-  context.fillStyle = "#118a8a";
-  context.font = "900 30px Microsoft YaHei, sans-serif";
-  context.fillText("评分理由", 150, 940);
+  context.fillStyle = "#171717";
+  context.font = "900 28px Microsoft YaHei, sans-serif";
+  context.fillText("特性描述", textX, cardY + 540);
 
   context.fillStyle = "#646464";
   context.font = "700 26px Microsoft YaHei, sans-serif";
-  result.reasons.slice(0, 3).forEach((reason, index) => {
-    const y = 995 + index * 72;
-    context.fillStyle = "#118a8a";
-    context.fillText(`${index + 1}.`, 150, y);
-    context.fillStyle = "#646464";
-    drawWrappedText(context, reason, 190, y, 560, 34, 2);
+  drawWrappedText(context, funCopy || "—", textX, cardY + 586, textW, 38, 5);
+
+  const traitOrder = ["响度", "音调", "持久", "混沌", "稳定", "爆发"];
+  const traitY = cardY + 780;
+  context.fillStyle = "#171717";
+  context.font = "900 28px Microsoft YaHei, sans-serif";
+  context.fillText("特性分布", textX, traitY);
+
+  const barX = textX;
+  const barW = textW;
+  const barH = 16;
+  const rowH = 54;
+  const startY = traitY + 32;
+  traitOrder.forEach((key, index) => {
+    const raw = Number(portrait?.[key]);
+    const value = Number.isFinite(raw) ? clampNumber(raw, 0, 10) : 0;
+    const y = startY + index * rowH;
+
+    context.fillStyle = "#8b7355";
+    context.font = "900 22px Microsoft YaHei, sans-serif";
+    context.fillText(key, barX, y);
+
+    context.textAlign = "right";
+    context.fillStyle = "#8b7355";
+    context.font = "900 22px Microsoft YaHei, sans-serif";
+    context.fillText(String(Math.round(value)), barX + barW, y);
+    context.textAlign = "left";
+
+    const trackY = y + 14;
+    context.save();
+    context.fillStyle = "#f8f0e8";
+    context.beginPath();
+    roundRectPath(context, barX, trackY, barW, barH, 999);
+    context.fill();
+    context.fillStyle = accent;
+    context.beginPath();
+    roundRectPath(context, barX, trackY, Math.max(0, (barW * value) / 10), barH, 999);
+    context.fill();
+    context.restore();
   });
+
+  if (tags.length) {
+    const tagLine = tags.slice(0, 5).join("  ");
+    context.textAlign = "center";
+    context.fillStyle = "#8b7355";
+    context.font = "800 22px Microsoft YaHei, sans-serif";
+    context.fillText(tagLine, width / 2, cardY + cardH - 116);
+  }
+
+  context.textAlign = "center";
+  context.fillStyle = "#b8a48c";
+  context.font = "800 20px Microsoft YaHei, sans-serif";
+  context.fillText("长按保存 / 截图分享", width / 2, cardY + cardH - 72);
+
+  context.restore();
 
   latestShareBlob = await new Promise((resolve) => shareCanvas.toBlob(resolve, "image/png"));
   if (!latestShareBlob) {
@@ -724,10 +1003,7 @@ function openPlatformShare(platform) {
   }
 
   navigator.clipboard?.writeText(latestShareCopy);
-  wechatShareButton.textContent = "已复制文案";
-  window.setTimeout(() => {
-    wechatShareButton.textContent = "微信";
-  }, 1600);
+  showToast({ title: "已复制分享文案", copy: "打开微信/朋友圈粘贴即可。" });
 }
 
 async function uploadAudio() {
@@ -873,15 +1149,14 @@ function renderResult(result) {
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
   renderPersonality(result);
+  renderDimensions(result);
   renderReasons(result.reasons);
   renderHisLevel(result);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
   latestShareCopy = buildShareCopy(result);
   shareText.textContent = latestShareCopy;
-  if (navSettlement) {
-    navSettlement.disabled = false;
-  }
+  setTabDisabled(navSettlement, false);
   const run = addRun(result);
   generateShareImage(result);
   updateNavLocks();
@@ -906,6 +1181,7 @@ function renderPersonality(result) {
   const matchValue = Number.isFinite(result?.personalityMatch) ? result.personalityMatch : Number(result?.personalityMatch);
   const match = Number.isFinite(matchValue) ? Math.max(0, Math.min(100, Math.round(matchValue))) : null;
   const funCopy = String(profile.funCopy || "").trim();
+  const themeColor = String(profile.themeColor || "").trim();
 
   personalityBox.hidden = false;
   personalityCodeText.textContent = code || "--";
@@ -913,6 +1189,53 @@ function renderPersonality(result) {
   personalityTitleText.textContent = title || "--";
   personalityMatchText.textContent = match === null ? "--" : String(match);
   personalityFunCopyText.textContent = funCopy;
+  personalityBox.style.borderColor = themeColor || "";
+  personalityBox.style.background = themeColor ? `color-mix(in srgb, ${themeColor} 10%, transparent)` : "";
+}
+
+function renderDimensions(result) {
+  const matches = Array.isArray(result?.dimensionMatches) ? result.dimensionMatches : [];
+  const matchValue = Number.isFinite(result?.personalityMatch) ? result.personalityMatch : Number(result?.personalityMatch);
+  const totalMatch = Number.isFinite(matchValue) ? clampNumber(matchValue, 0, 100) : null;
+
+  dimensionChips.replaceChildren();
+  if (!matches.length) {
+    dimensionBox.hidden = true;
+    dimensionTotal.textContent = "--%";
+    return;
+  }
+
+  dimensionBox.hidden = false;
+  dimensionTotal.textContent = totalMatch === null ? "--%" : `${Math.round(totalMatch)}%`;
+
+  matches
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      dimension: String(item.dimension || "").trim(),
+      letter: String(item.letter || "").trim(),
+      match: clampNumber(item.match, 0, 100)
+    }))
+    .filter((item) => item.dimension || item.letter)
+    .slice(0, 4)
+    .forEach((item) => {
+      const chip = document.createElement("span");
+      chip.className = "dimension-chip";
+
+      const dim = document.createElement("strong");
+      dim.className = "dimension-chip-dimension";
+      dim.textContent = item.dimension || "维度";
+
+      const letter = document.createElement("span");
+      letter.className = "dimension-chip-letter";
+      letter.textContent = item.letter || "--";
+
+      const match = document.createElement("span");
+      match.className = "dimension-chip-match";
+      match.textContent = `${item.match}%`;
+
+      chip.append(dim, " · ", letter, " · ", match);
+      dimensionChips.append(chip);
+    });
 }
 
 function renderReasons(reasons) {
@@ -947,14 +1270,16 @@ function renderHisLevel(result) {
 
 function updateNavLocks() {
   const hasRuns = getRuns().length > 0;
-  if (navAchievements) {
-    navAchievements.disabled = !hasRuns;
-  }
-  if (navProfile) {
-    navProfile.disabled = !hasRuns;
-  }
-  if (navSettlement) {
-    navSettlement.disabled = !latestResult;
+  setTabDisabled(navStage, false);
+  setTabDisabled(navRanking, false);
+  setTabDisabled(navAchievements, !hasRuns);
+  setTabDisabled(navProfile, !hasRuns);
+  setTabDisabled(navSettlement, !latestResult);
+  const normalized = normalizeTargetView(currentView);
+  if (normalized !== currentView) {
+    showView(normalized);
+  } else {
+    setActiveNav(currentView);
   }
 }
 
@@ -1325,7 +1650,7 @@ function renderProfile() {
       .sort((a, b) => a.localeCompare(b, "zh-CN"))
       .forEach((label) => {
         const chip = document.createElement("span");
-        chip.className = "chip";
+        chip.className = "chip is-accent";
         chip.textContent = label;
         profilePersonaChips.append(chip);
       });
@@ -1409,6 +1734,7 @@ function clearRunsOnly() {
   if (currentView === "settlement") {
     showEntryPage();
   }
+  showToast({ title: "已清除本地记录", copy: "排行榜与档案已同步更新。" });
 }
 
 function clearAllLocalData() {
@@ -1422,6 +1748,53 @@ function clearAllLocalData() {
   renderProfile();
   renderAchievements();
   resetAudio();
+  showToast({ title: "已清除本地数据", copy: "包含历史、成就与档案统计。" });
+}
+
+function showToast(options) {
+  if (!toastHost) {
+    return;
+  }
+  const title = String(options?.title || "").trim() || "提示";
+  const copy = String(options?.copy || "").trim();
+  const actionText = String(options?.actionText || "").trim();
+  const onAction = typeof options?.onAction === "function" ? options.onAction : null;
+  const duration = clampNumber(options?.durationMs ?? 2200, 600, 8000);
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `
+    <div>
+      <p class="toast-title">${title}</p>
+      ${copy ? `<p class="toast-copy">${copy}</p>` : ""}
+    </div>
+    <div class="toast-actions"></div>
+  `;
+
+  const actions = toast.querySelector(".toast-actions");
+  if (actionText && actions) {
+    const actionBtn = document.createElement("button");
+    actionBtn.type = "button";
+    actionBtn.textContent = actionText;
+    actionBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onAction?.();
+      dismiss();
+    });
+    actions.append(actionBtn);
+  }
+
+  const dismiss = () => {
+    if (!toast.isConnected) {
+      return;
+    }
+    toast.classList.add("is-leaving");
+    window.setTimeout(() => toast.remove(), prefersReducedMotion() ? 0 : 260);
+  };
+
+  toast.addEventListener("click", dismiss);
+  toastHost.prepend(toast);
+  window.setTimeout(dismiss, duration);
 }
 
 shareButton.addEventListener("click", async () => {
@@ -1431,7 +1804,7 @@ shareButton.addEventListener("click", async () => {
 
   try {
     if (await shareGeneratedImage()) {
-      shareButton.textContent = "分享图已唤起";
+      showToast({ title: "已唤起系统分享", copy: "选择渠道发送即可。" });
       return;
     }
 
@@ -1441,18 +1814,14 @@ shareButton.addEventListener("click", async () => {
         text: latestShareCopy,
         url: window.location.href
       });
-      shareButton.textContent = "分享完成";
+      showToast({ title: "分享完成", copy: "哈基米宇宙已收到你的广播。" });
       return;
     }
 
     await navigator.clipboard.writeText(latestShareCopy);
-    shareButton.textContent = "文案已复制";
+    showToast({ title: "已复制分享文案", copy: "可直接粘贴到聊天或动态。" });
   } catch (error) {
-    shareButton.textContent = "分享未完成";
-  } finally {
-    window.setTimeout(() => {
-      shareButton.textContent = "分享结果";
-    }, 1600);
+    showToast({ title: "分享未完成", copy: "浏览器未授权或渠道不可用。" });
   }
 });
 
@@ -1465,6 +1834,7 @@ saveShareButton.addEventListener("click", () => {
   link.href = latestShareUrl;
   link.download = "hachimi-result.png";
   link.click();
+  showToast({ title: "已开始下载", copy: "如果被拦截，请检查浏览器下载设置。" });
 });
 
 wechatShareButton.addEventListener("click", () => openPlatformShare("wechat"));
@@ -1482,23 +1852,64 @@ clearHistoryButton.addEventListener("click", () => {
 againButton.addEventListener("click", resetAudio);
 
 document.querySelectorAll(".nav-btn").forEach((button) => {
-  button.addEventListener("click", () => {
+  const activate = () => {
     const view = String(button.dataset.view || "stage");
     if (button.disabled) {
       return;
     }
-    showView(view);
-    if (view === "ranking") {
+    const target = normalizeTargetView(view);
+    showView(target);
+    if (target === "ranking") {
       renderRanking();
     }
-    if (view === "achievements") {
+    if (target === "achievements") {
       renderAchievements();
     }
-    if (view === "profile") {
+    if (target === "profile") {
       renderProfile();
+    }
+  };
+
+  button.addEventListener("click", activate);
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      activate();
     }
   });
 });
+
+if (topbarTablist) {
+  const tabs = [navStage, navSettlement, navRanking, navAchievements, navProfile].filter(Boolean);
+  const getEnabledTabs = () => tabs.filter((tab) => !tab.disabled);
+  topbarTablist.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") {
+      return;
+    }
+    const enabled = getEnabledTabs();
+    if (!enabled.length) {
+      return;
+    }
+    const active = document.activeElement;
+    const currentIndex = enabled.indexOf(active);
+    const selectedIndex = enabled.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+    const baseIndex = currentIndex >= 0 ? currentIndex : selectedIndex >= 0 ? selectedIndex : 0;
+    let next = enabled[0];
+
+    if (event.key === "Home") {
+      next = enabled[0];
+    } else if (event.key === "End") {
+      next = enabled[enabled.length - 1];
+    } else if (event.key === "ArrowRight") {
+      next = enabled[(baseIndex + 1) % enabled.length] || enabled[0];
+    } else if (event.key === "ArrowLeft") {
+      next = enabled[(baseIndex - 1 + enabled.length) % enabled.length] || enabled[enabled.length - 1];
+    }
+
+    event.preventDefault();
+    next?.focus();
+  });
+}
 
 if (rankingMode) {
   rankingMode.addEventListener("change", renderRanking);

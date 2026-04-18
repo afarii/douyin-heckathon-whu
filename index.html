@@ -8,17 +8,17 @@
   </head>
   <body>
     <main class="app">
-      <header class="topbar" aria-label="页面导航">
-        <div class="topbar-inner">
-          <button class="nav-btn is-active" id="navStage" type="button" data-view="stage">检测</button>
-          <button class="nav-btn" id="navSettlement" type="button" data-view="settlement" disabled>结算</button>
-          <button class="nav-btn" id="navRanking" type="button" data-view="ranking">排行榜</button>
-          <button class="nav-btn" id="navAchievements" type="button" data-view="achievements" disabled>成就</button>
-          <button class="nav-btn" id="navProfile" type="button" data-view="profile" disabled>我的档案</button>
+      <header class="topbar">
+        <div class="topbar-inner" role="tablist" aria-label="页面导航">
+          <button class="nav-btn is-active" id="navStage" type="button" data-view="stage" role="tab" aria-selected="true" aria-controls="stagePage" aria-disabled="false" tabindex="0">检测</button>
+          <button class="nav-btn" id="navSettlement" type="button" data-view="settlement" role="tab" aria-selected="false" aria-controls="settlementPage" aria-disabled="true" tabindex="-1" disabled>结算</button>
+          <button class="nav-btn" id="navRanking" type="button" data-view="ranking" role="tab" aria-selected="false" aria-controls="rankingPage" aria-disabled="false" tabindex="-1">排行榜</button>
+          <button class="nav-btn" id="navAchievements" type="button" data-view="achievements" role="tab" aria-selected="false" aria-controls="achievementsPage" aria-disabled="true" tabindex="-1" disabled>成就</button>
+          <button class="nav-btn" id="navProfile" type="button" data-view="profile" role="tab" aria-selected="false" aria-controls="profilePage" aria-disabled="true" tabindex="-1" disabled>我的档案</button>
         </div>
       </header>
 
-      <section class="stage" aria-labelledby="page-title">
+      <section class="stage" id="stagePage" role="tabpanel" aria-labelledby="navStage page-title">
         <div class="intro">
           <img class="mascot" src="./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E9%AB%98%E6%B8%85%E5%9F%BA%E7%B1%B3.png" alt="哈基米猫咪" />
           <div>
@@ -100,7 +100,7 @@
         </div>
       </section>
 
-      <section class="settlement" id="settlementPage" aria-labelledby="settlement-title" hidden>
+      <section class="settlement" id="settlementPage" role="tabpanel" aria-labelledby="navSettlement settlement-title" hidden>
         <div class="settlement-visual">
           <img class="settlement-cat" src="./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E9%AB%98%E6%B8%85%E5%9F%BA%E7%B1%B3.png" alt="哈基米结算猫咪" />
           <div class="settlement-badge" id="settlementBadge">哈基米认证</div>
@@ -158,6 +158,14 @@
             <p id="personalityFunCopy" style="white-space: pre-line"></p>
           </div>
 
+          <div class="dimension-box" id="dimensionBox" aria-labelledby="dimension-title" hidden>
+            <div class="dimension-head">
+              <p id="dimension-title">维度匹配</p>
+              <span class="dimension-total" id="dimensionTotal">--%</span>
+            </div>
+            <div class="dimension-chips" id="dimensionBars"></div>
+          </div>
+
           <div class="reason-box" aria-labelledby="reason-title">
             <p id="reason-title">评分理由</p>
             <ul id="reasonList">
@@ -178,7 +186,7 @@
           <div class="share-box">
             <p id="shareText">我刚测了哈基米浓度，结果正在生成。</p>
             <img id="shareImage" alt="哈基米分享图预览" hidden />
-            <canvas id="shareCanvas" width="900" height="1200" hidden></canvas>
+            <canvas id="shareCanvas" width="750" height="1334" hidden></canvas>
             <div class="share-platforms" aria-label="分享渠道">
               <button class="secondary" id="saveShareButton" type="button" disabled>保存分享图</button>
               <button class="secondary" id="wechatShareButton" type="button" disabled>微信</button>
@@ -194,7 +202,7 @@
         </div>
       </section>
 
-      <section class="page" id="rankingPage" aria-labelledby="ranking-title" hidden>
+      <section class="page" id="rankingPage" role="tabpanel" aria-labelledby="navRanking ranking-title" hidden>
         <div class="page-card">
           <div class="page-head">
             <div>
@@ -220,7 +228,7 @@
         </div>
       </section>
 
-      <section class="page" id="achievementsPage" aria-labelledby="achievements-title" hidden>
+      <section class="page" id="achievementsPage" role="tabpanel" aria-labelledby="navAchievements achievements-title" hidden>
         <div class="page-card">
           <div class="page-head">
             <div>
@@ -234,7 +242,7 @@
         </div>
       </section>
 
-      <section class="page" id="profilePage" aria-labelledby="profile-title" hidden>
+      <section class="page" id="profilePage" role="tabpanel" aria-labelledby="navProfile profile-title" hidden>
         <div class="page-card">
           <div class="page-head">
             <div>
@@ -304,6 +312,8 @@
           </div>
         </div>
       </div>
+
+      <div class="toast-host" id="toastHost" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
     </main>
 
     <script src="./app.js"></script>
