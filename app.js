@@ -203,14 +203,14 @@ function getLocalResult() {
 function decorateResult(result) {
   const similarity = Math.max(0, Math.min(100, Math.round(result.similarity ?? 0)));
   let grade = "不像哈基米";
-  let comment = "这不是哈基米，像隔壁的喵声。";
+  let comment = "这是哈基米...吗？感觉还差点什么。";
 
   if (similarity >= 85) {
     grade = "神级哈基米";
-    comment = "你登上哈基宇宙排行榜了！";
+    comment = "哈基米浓度爆表，猫猫频道已经收到你的信号。";
   } else if (similarity >= 60) {
-    grade = "真哈基米";
-    comment = "听起来有点哈基米节奏。";
+    grade = "小哈基米";
+    comment = "听起来有点哈基米节奏，可能还需要喝点蜂蜜水。";
   } else if (similarity >= 30) {
     grade = "半哈基米";
     comment = "有点味道，但还不是我想要的。";
