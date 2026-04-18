@@ -10,6 +10,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from audio_similarity import analyze_upload
+from hajimi_ti_catalog import get_personality_by_code
+from hajimi_ti_features import extract_feature_vector_from_wav
+from hajimi_ti_judge import judge
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +44,8 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                 reference_path = reference_temp_path
 
             result = analyze_upload(temp_path, reference_path)
+            judge_result = judge(extract_feature_vector_from_wav(temp_path))
+            profile = get_personality_by_code(judge_result.personalityCode)
             self._json(
                 {
                     "similarity": result.similarity,
@@ -50,6 +55,24 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                     "confidence": result.confidence,
                     "reasons": list(result.reasons),
                     "details": result.details,
+                    "personalityCode": judge_result.personalityCode,
+                    "personalityMatch": judge_result.personalityMatch,
+                    "dimensionMatches": [
+                        {"dimension": item.dimension, "letter": item.letter, "match": item.match}
+                        for item in judge_result.dimensionMatches
+                    ],
+                    "personalityProfile": {
+                        "code": profile.code,
+                        "name": profile.name,
+                        "title": profile.title,
+                        "themeColor": profile.themeColor,
+                        "emoji": profile.emoji,
+                        "rarity": profile.rarity,
+                        "coreDescription": profile.coreDescription,
+                        "funCopy": profile.funCopy,
+                        "portrait6d": dict(profile.portrait6d),
+                        "tags": list(profile.tags),
+                    },
                 }
             )
         except ValueError as error:

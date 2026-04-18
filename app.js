@@ -21,6 +21,12 @@ const settlementAudio = document.querySelector("#settlementAudio");
 const finalScore = document.querySelector("#finalScore");
 const finalGrade = document.querySelector("#finalGrade");
 const finalComment = document.querySelector("#finalComment");
+const personalityBox = document.querySelector("#personalityBox");
+const personalityCodeText = document.querySelector("#personalityCode");
+const personalityNameText = document.querySelector("#personalityName");
+const personalityTitleText = document.querySelector("#personalityTitleText");
+const personalityMatchText = document.querySelector("#personalityMatchText");
+const personalityFunCopyText = document.querySelector("#personalityFunCopy");
 const shareText = document.querySelector("#shareText");
 const reasonList = document.querySelector("#reasonList");
 const historyList = document.querySelector("#historyList");
@@ -113,6 +119,12 @@ function resetAudio() {
   setScore(null);
   gradeText.textContent = "等待一声哈基米";
   commentText.textContent = "录音完成后点击检测，结果会在这里冒出来。";
+  personalityBox.hidden = true;
+  personalityCodeText.textContent = "--";
+  personalityNameText.textContent = "--";
+  personalityTitleText.textContent = "--";
+  personalityMatchText.textContent = "--";
+  personalityFunCopyText.textContent = "";
   shareImage.hidden = true;
   shareImage.removeAttribute("src");
   saveShareButton.disabled = true;
@@ -214,7 +226,11 @@ function decorateResult(result) {
     grade: result.grade || grade,
     comment: result.comment || localComments[similarity % localComments.length] || comment,
     reasons: result.reasons || getLocalReasons(similarity),
-    details: result.details || {}
+    details: result.details || {},
+    personalityCode: result.personalityCode ?? "",
+    personalityMatch: result.personalityMatch ?? null,
+    dimensionMatches: Array.isArray(result.dimensionMatches) ? result.dimensionMatches : [],
+    personalityProfile: result.personalityProfile ?? null
   };
 }
 
@@ -682,6 +698,7 @@ function renderResult(result) {
   finalScore.textContent = `${result.similarity}%`;
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
+  renderPersonality(result);
   renderReasons(result.reasons);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
@@ -690,6 +707,28 @@ function renderResult(result) {
   saveHistory(result);
   generateShareImage(result);
   showSettlementPage();
+}
+
+function renderPersonality(result) {
+  const profile = result?.personalityProfile;
+  if (!profile) {
+    personalityBox.hidden = true;
+    return;
+  }
+
+  const code = String(result?.personalityCode || profile.code || "").trim();
+  const name = String(profile.name || "").trim();
+  const title = String(profile.title || "").trim();
+  const matchValue = Number.isFinite(result?.personalityMatch) ? result.personalityMatch : Number(result?.personalityMatch);
+  const match = Number.isFinite(matchValue) ? Math.max(0, Math.min(100, Math.round(matchValue))) : null;
+  const funCopy = String(profile.funCopy || "").trim();
+
+  personalityBox.hidden = false;
+  personalityCodeText.textContent = code || "--";
+  personalityNameText.textContent = name || "--";
+  personalityTitleText.textContent = title || "--";
+  personalityMatchText.textContent = match === null ? "--" : String(match);
+  personalityFunCopyText.textContent = funCopy;
 }
 
 function renderReasons(reasons) {
