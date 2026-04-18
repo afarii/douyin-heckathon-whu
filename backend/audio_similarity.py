@@ -21,6 +21,7 @@ class AudioFeatures:
     rms: float
     zcr: float
     pitch_hz: float
+    voiced_ratio: float
     tempo_hz: float
     bands: tuple[float, ...]
     contour: tuple[float, ...]
@@ -113,7 +114,9 @@ def extract_features(samples: list[float], sample_rate: int) -> AudioFeatures:
     silence_ratio = 1 - active_ratio
     rms = sum(_rms(frame) for frame in active_frames) / len(active_frames)
     zcr = sum(_zcr(frame) for frame in active_frames) / len(active_frames)
-    pitch_hz = _median([pitch for pitch in (_pitch(frame, TARGET_RATE) for frame in active_frames) if pitch > 0])
+    pitch_values = [pitch for pitch in (_pitch(frame, TARGET_RATE) for frame in active_frames) if pitch > 0]
+    pitch_hz = _median(pitch_values)
+    voiced_ratio = len(pitch_values) / len(active_frames)
     tempo_hz = _tempo_from_envelope(energies, TARGET_RATE)
     bands = _average_bands(active_frames, TARGET_RATE)
     contour = _energy_contour(energies)
@@ -126,6 +129,7 @@ def extract_features(samples: list[float], sample_rate: int) -> AudioFeatures:
         rms=rms,
         zcr=zcr,
         pitch_hz=pitch_hz,
+        voiced_ratio=voiced_ratio,
         tempo_hz=tempo_hz,
         bands=bands,
         contour=contour,
@@ -166,6 +170,7 @@ def compare_features(uploaded: AudioFeatures, reference: AudioFeatures) -> tuple
         "activeDuration": round(uploaded.active_duration, 3),
         "activeRatio": round(uploaded.active_ratio, 3),
         "pitchHz": round(uploaded.pitch_hz, 1),
+        "voicedRatio": round(uploaded.voiced_ratio, 3),
         "tempoHz": round(uploaded.tempo_hz, 2),
     }
     reasons = [
@@ -205,6 +210,7 @@ def score_hachimi_likeness(features: AudioFeatures) -> tuple[float, list[str], d
         "contourMatch": round(contour_match, 3),
         "activeDuration": round(features.active_duration, 3),
         "activeRatio": round(features.active_ratio, 3),
+        "voicedRatio": round(features.voiced_ratio, 3),
     }
     reasons = [
         "当前未使用参考素材比对，系统依据短促、明亮、重复起伏等哈基米特征评估。",
@@ -258,6 +264,8 @@ def _apply_reference_caps(
         caps.append((60, "有效时长和示例差距较大，分数被限制在 60 分以内。"))
     if pitch_similarity < 0.25:
         caps.append((62, "音高和示例差距过大，分数被限制在 62 分以内。"))
+    if _looks_like_continuous_speech(features):
+        caps.append((42, "检测到较多连续稳定的人声音高，更接近朗读或听力材料，分数被限制在 42 分以内。"))
 
     critical_failures = sum(
         (
@@ -297,12 +305,21 @@ def _apply_heuristic_caps(
         caps.append((50, "嘶嘶感不足，启发式分数被限制在 50 分以内。"))
     if pitch_match < 0.25 and tempo_match < 0.35:
         caps.append((42, "音高和节奏都不符合哈基米特征，启发式分数被限制在 42 分以内。"))
+    if _looks_like_continuous_speech(features):
+        caps.append((42, "检测到较多连续稳定的人声音高，更接近朗读或听力材料，启发式分数被限制在 42 分以内。"))
 
     if not caps:
         return score, []
 
     cap, reason = min(caps, key=lambda item: item[0])
     return min(score, cap), [reason]
+
+
+def _looks_like_continuous_speech(features: AudioFeatures) -> bool:
+    voiced_enough = features.voiced_ratio >= 0.72
+    breath_noise_weak = features.zcr < 0.16
+    long_enough = features.active_duration >= 0.65
+    return voiced_enough and breath_noise_weak and long_enough
 
 
 def _quality_reason(label: str, value: float, good: str, weak: str) -> str:
