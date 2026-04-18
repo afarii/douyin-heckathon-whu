@@ -1,0 +1,14 @@
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV HOST=0.0.0.0
+ENV PORT=7860
+
+WORKDIR /app
+
+COPY . .
+
+EXPOSE 7860
+
+CMD ["python", "backend/server.py"]

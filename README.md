@@ -1,3 +1,12 @@
+---
+title: Hachimi
+emoji: 🐱
+colorFrom: yellow
+colorTo: red
+sdk: docker
+app_port: 7860
+---
+
 # 哈基米相似度测试
 
 ## 项目简介
@@ -46,4 +55,26 @@ $env:PORT=4180; python backend/server.py
 
 * 录音依赖浏览器麦克风权限，线上环境建议使用 HTTPS。
 * 前端请求的是相对路径 `/api/upload`，部署时建议前端和后端保持同源。
-* 后端默认监听 `127.0.0.1:4173`，生产部署建议通过 Nginx/Caddy 等服务做 HTTPS 反向代理。
+* 本地默认监听 `127.0.0.1:4173`。
+* Docker/Hugging Face Spaces 部署时通过 `HOST=0.0.0.0` 和 `PORT=7860` 对外提供服务。
+
+## Hugging Face Spaces 部署
+
+Space 地址：
+
+```text
+https://huggingface.co/spaces/cardbord/hachimi
+```
+
+推送到 Space：
+
+```bash
+git remote add hf git@hf.co:spaces/cardbord/hachimi
+git push hf main
+```
+
+部署完成后的公网地址通常为：
+
+```text
+https://cardbord-hachimi.hf.space/
+```
