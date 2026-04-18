@@ -102,6 +102,16 @@
           <p class="lead" id="settlementLead">检测完成，哈基米评委团已经给出结果。</p>
         </div>
 
+        <div class="settlement-audio" aria-label="哈基米结算音乐">
+          <p>结算 BGM</p>
+          <audio
+            id="settlementAudio"
+            controls
+            preload="metadata"
+            src="./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%93%88%E9%9B%AA%E5%A4%A7%E5%B8%BD%E9%99%A9%20-%201.%E5%93%88%E9%9B%AA%E5%A4%A7%E5%B8%BD%E9%99%A9(Av112966179686939%2CP1).mp3"
+          ></audio>
+        </div>
+
         <div class="settlement-card" aria-label="检测结算结果">
           <div class="settlement-score">
             <span id="finalScore">--%</span>
@@ -115,6 +125,17 @@
 
           <p class="settlement-comment" id="finalComment">录音完成后，哈基米宇宙会给你一个答案。</p>
 
+          <div class="metric-box" aria-labelledby="metric-title">
+            <p id="metric-title">评分拆解</p>
+            <div class="metric-list" id="metricList">
+              <div class="metric-item">
+                <span>等待检测</span>
+                <strong>--</strong>
+                <div class="metric-track"><i style="width: 0%"></i></div>
+              </div>
+            </div>
+          </div>
+
           <div class="reason-box" aria-labelledby="reason-title">
             <p id="reason-title">评分理由</p>
             <ul id="reasonList">
@@ -122,8 +143,26 @@
             </ul>
           </div>
 
+          <div class="history-box" aria-labelledby="history-title">
+            <div class="history-head">
+              <p id="history-title">本机排行榜</p>
+              <button class="text-button" id="clearHistoryButton" type="button">清空</button>
+            </div>
+            <ol id="historyList">
+              <li>还没有记录，先来一声哈基米。</li>
+            </ol>
+          </div>
+
           <div class="share-box">
             <p id="shareText">我刚测了哈基米浓度，结果正在生成。</p>
+            <img id="shareImage" alt="哈基米分享图预览" hidden />
+            <canvas id="shareCanvas" width="900" height="1200" hidden></canvas>
+            <div class="share-platforms" aria-label="分享渠道">
+              <button class="secondary" id="saveShareButton" type="button" disabled>保存分享图</button>
+              <button class="secondary" id="wechatShareButton" type="button" disabled>微信</button>
+              <button class="secondary" id="qqShareButton" type="button" disabled>QQ</button>
+              <button class="secondary" id="weiboShareButton" type="button" disabled>微博</button>
+            </div>
           </div>
 
           <div class="settlement-actions">

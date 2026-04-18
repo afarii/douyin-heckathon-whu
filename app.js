@@ -17,12 +17,22 @@ const settlementBadge = document.querySelector("#settlementBadge");
 const settlementLead = document.querySelector("#settlementLead");
 const settlementCat = document.querySelector(".settlement-cat");
 const settlementScore = document.querySelector(".settlement-score");
+const settlementAudio = document.querySelector("#settlementAudio");
 const finalScore = document.querySelector("#finalScore");
 const finalGrade = document.querySelector("#finalGrade");
 const finalComment = document.querySelector("#finalComment");
 const shareText = document.querySelector("#shareText");
 const reasonList = document.querySelector("#reasonList");
+const metricList = document.querySelector("#metricList");
+const historyList = document.querySelector("#historyList");
+const clearHistoryButton = document.querySelector("#clearHistoryButton");
+const shareImage = document.querySelector("#shareImage");
+const shareCanvas = document.querySelector("#shareCanvas");
 const shareButton = document.querySelector("#shareButton");
+const saveShareButton = document.querySelector("#saveShareButton");
+const wechatShareButton = document.querySelector("#wechatShareButton");
+const qqShareButton = document.querySelector("#qqShareButton");
+const weiboShareButton = document.querySelector("#weiboShareButton");
 const againButton = document.querySelector("#againButton");
 
 let mediaRecorder;
@@ -32,8 +42,12 @@ let audioBlob;
 let audioFileName = "hachimi-recording.webm";
 let startedAt = 0;
 let timerId;
+let latestResult = null;
+let latestShareBlob = null;
+let latestShareUrl = "";
 
 const ringLength = 326.73;
+const historyKey = "hachimi-history-v1";
 const sampleAudioPath = "./基米素材/haqi.mp3";
 const scoreAssets = {
   high: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%9F%BA%E7%B1%B3%E5%8A%A8%E5%9B%BE1%E7%BB%93%E7%AE%97%E7%94%BB%E9%9D%A2.gif",
@@ -86,6 +100,8 @@ function setAudio(blob, fileName) {
 function resetAudio() {
   chunks = [];
   audioBlob = null;
+  latestResult = null;
+  latestShareBlob = null;
   fileInput.value = "";
   audioPreview.removeAttribute("src");
   audioPreview.hidden = true;
@@ -98,6 +114,12 @@ function resetAudio() {
   setScore(null);
   gradeText.textContent = "等待一声哈基米";
   commentText.textContent = "录音完成后点击检测，结果会在这里冒出来。";
+  shareImage.hidden = true;
+  shareImage.removeAttribute("src");
+  saveShareButton.disabled = true;
+  wechatShareButton.disabled = true;
+  qqShareButton.disabled = true;
+  weiboShareButton.disabled = true;
   showEntryPage();
 }
 
@@ -199,7 +221,8 @@ function decorateResult(result) {
     similarity,
     grade: result.grade || grade,
     comment: result.comment || localComments[similarity % localComments.length] || comment,
-    reasons: result.reasons || getLocalReasons(similarity)
+    reasons: result.reasons || getLocalReasons(similarity),
+    details: result.details || {}
   };
 }
 
@@ -258,12 +281,18 @@ function buildShareCopy(result) {
 function showEntryPage() {
   stagePage.hidden = false;
   settlementPage.hidden = true;
+  settlementAudio.pause();
+  settlementAudio.currentTime = 0;
 }
 
 function showSettlementPage() {
   stagePage.hidden = true;
   settlementPage.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
+  settlementAudio.currentTime = 0;
+  settlementAudio.play().catch(() => {
+    settlementAudio.controls = true;
+  });
 }
 
 function getScoreLevel(value) {
@@ -312,6 +341,273 @@ function updateSettlementScore(value) {
   settlementScore.style.setProperty("--score-percent", `${safeValue}%`);
   settlementScore.style.setProperty("--score-color", level.color);
   settlementScore.dataset.level = level.name;
+}
+
+function toPercent(value, fallback) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return fallback;
+  }
+  return Math.max(0, Math.min(100, Math.round(value * 100)));
+}
+
+function average(values, fallback) {
+  const usable = values.filter((value) => typeof value === "number" && !Number.isNaN(value));
+  if (!usable.length) {
+    return fallback;
+  }
+  return usable.reduce((total, value) => total + value, 0) / usable.length;
+}
+
+function getMetricColor(value) {
+  if (value >= 85) {
+    return "var(--green)";
+  }
+
+  if (value >= 30) {
+    return "var(--yellow)";
+  }
+
+  return "var(--red)";
+}
+
+function buildMetrics(result) {
+  const details = result.details || {};
+  const fallback = result.similarity;
+  const timbre = toPercent(average([details.bandSimilarity, details.pitchSimilarity], fallback / 100), fallback);
+  const rhythm = toPercent(
+    average([details.contourSimilarity, details.tempoSimilarity, details.durationSimilarity], fallback / 100),
+    fallback
+  );
+  const clarity = toPercent(average([details.zcrSimilarity, details.activeRatio], fallback / 100), fallback);
+  const duration = toPercent(details.durationSimilarity, fallback);
+
+  return [
+    { label: "音色贴近", value: timbre },
+    { label: "节奏起伏", value: rhythm },
+    { label: "声音清晰", value: clarity },
+    { label: "时长匹配", value: duration }
+  ];
+}
+
+function renderMetrics(result) {
+  metricList.replaceChildren();
+  for (const metric of buildMetrics(result)) {
+    const item = document.createElement("div");
+    item.className = "metric-item";
+    item.style.setProperty("--metric-color", getMetricColor(metric.value));
+    item.innerHTML = `
+      <span>${metric.label}</span>
+      <strong>${metric.value}%</strong>
+      <div class="metric-track"><i style="width: ${metric.value}%"></i></div>
+    `;
+    metricList.append(item);
+  }
+}
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(historyKey)) || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveHistory(result) {
+  const next = [
+    {
+      similarity: result.similarity,
+      grade: result.grade,
+      comment: result.comment,
+      createdAt: Date.now()
+    },
+    ...getHistory()
+  ]
+    .sort((a, b) => b.similarity - a.similarity || b.createdAt - a.createdAt)
+    .slice(0, 10);
+  localStorage.setItem(historyKey, JSON.stringify(next));
+  renderHistory();
+}
+
+function formatHistoryTime(timestamp) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(timestamp));
+}
+
+function renderHistory() {
+  const history = getHistory();
+  historyList.replaceChildren();
+
+  if (!history.length) {
+    const item = document.createElement("li");
+    item.textContent = "还没有记录，先来一声哈基米。";
+    historyList.append(item);
+    return;
+  }
+
+  history.forEach((record, index) => {
+    const item = document.createElement("li");
+    const level = getScoreLevel(record.similarity);
+    item.style.setProperty("--history-color", level.color);
+    item.innerHTML = `
+      <span>${index + 1}</span>
+      <strong>${record.similarity}%</strong>
+      <em>${record.grade}</em>
+      <small>${formatHistoryTime(record.createdAt)}</small>
+    `;
+    historyList.append(item);
+  });
+}
+
+function loadCanvasImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function drawWrappedText(context, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  const chars = String(text).split("");
+  const lines = [];
+  let line = "";
+
+  for (const char of chars) {
+    const testLine = line + char;
+    if (context.measureText(testLine).width > maxWidth && line) {
+      lines.push(line);
+      line = char;
+      if (lines.length === maxLines - 1) {
+        break;
+      }
+    } else {
+      line = testLine;
+    }
+  }
+
+  lines.push(line);
+  lines.slice(0, maxLines).forEach((item, index) => {
+    context.fillText(item, x, y + index * lineHeight);
+  });
+}
+
+async function generateShareImage(result) {
+  const context = shareCanvas.getContext("2d");
+  const width = shareCanvas.width;
+  const height = shareCanvas.height;
+  const level = getScoreLevel(result.similarity);
+  const image = await loadCanvasImage(level.asset);
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#fffaf2";
+  context.fillRect(0, 0, width, height);
+  context.fillStyle = "#eefbfa";
+  context.fillRect(42, 42, width - 84, height - 84);
+  context.fillStyle = "#ffffff";
+  context.fillRect(78, 78, width - 156, height - 156);
+
+  if (image) {
+    const size = 320;
+    context.save();
+    context.beginPath();
+    context.roundRect(290, 120, size, size, 24);
+    context.clip();
+    context.drawImage(image, 290, 120, size, size);
+    context.restore();
+  }
+
+  context.fillStyle = "#171717";
+  context.font = "900 54px Microsoft YaHei, sans-serif";
+  context.textAlign = "center";
+  context.fillText("我的哈基米结算单", width / 2, 520);
+
+  context.fillStyle = level.color.replace("var(--green)", "#3a9f6f").replace("var(--yellow)", "#f2c14e").replace("var(--red)", "#d7263d");
+  context.font = "900 132px Microsoft YaHei, sans-serif";
+  context.fillText(`${result.similarity}%`, width / 2, 665);
+
+  context.fillStyle = "#171717";
+  context.font = "900 46px Microsoft YaHei, sans-serif";
+  context.fillText(result.grade, width / 2, 735);
+
+  context.fillStyle = "#646464";
+  context.font = "700 30px Microsoft YaHei, sans-serif";
+  drawWrappedText(context, result.comment, width / 2, 800, 620, 44, 3);
+
+  context.textAlign = "left";
+  context.fillStyle = "#118a8a";
+  context.font = "900 30px Microsoft YaHei, sans-serif";
+  context.fillText("评分拆解", 150, 960);
+
+  buildMetrics(result).forEach((metric, index) => {
+    const y = 1015 + index * 42;
+    context.fillStyle = "#646464";
+    context.font = "700 24px Microsoft YaHei, sans-serif";
+    context.fillText(metric.label, 150, y);
+    context.fillStyle = "#eadfce";
+    context.fillRect(300, y - 20, 360, 18);
+    context.fillStyle = getMetricColor(metric.value).replace("var(--green)", "#3a9f6f").replace("var(--yellow)", "#f2c14e").replace("var(--red)", "#d7263d");
+    context.fillRect(300, y - 20, 360 * (metric.value / 100), 18);
+    context.fillText(`${metric.value}%`, 690, y);
+  });
+
+  latestShareBlob = await new Promise((resolve) => shareCanvas.toBlob(resolve, "image/png"));
+  if (!latestShareBlob) {
+    return;
+  }
+
+  if (latestShareUrl) {
+    URL.revokeObjectURL(latestShareUrl);
+  }
+  latestShareUrl = URL.createObjectURL(latestShareBlob);
+  shareImage.src = latestShareUrl;
+  shareImage.hidden = false;
+  saveShareButton.disabled = false;
+  wechatShareButton.disabled = false;
+  qqShareButton.disabled = false;
+  weiboShareButton.disabled = false;
+}
+
+async function shareGeneratedImage() {
+  if (!latestResult || !latestShareBlob) {
+    return false;
+  }
+
+  const file = new File([latestShareBlob], "hachimi-result.png", { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({
+      title: "我的哈基米结算单",
+      text: latestShareCopy,
+      files: [file]
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function openPlatformShare(platform) {
+  const encodedUrl = encodeURIComponent(window.location.href);
+  const encodedText = encodeURIComponent(latestShareCopy);
+
+  if (platform === "qq") {
+    window.open(`https://connect.qq.com/widget/shareqq/index.html?url=${encodedUrl}&title=${encodedText}`, "_blank", "noopener");
+    return;
+  }
+
+  if (platform === "weibo") {
+    window.open(`https://service.weibo.com/share/share.php?url=${encodedUrl}&title=${encodedText}`, "_blank", "noopener");
+    return;
+  }
+
+  navigator.clipboard?.writeText(latestShareCopy);
+  wechatShareButton.textContent = "已复制文案";
+  window.setTimeout(() => {
+    wechatShareButton.textContent = "微信";
+  }, 1600);
 }
 
 async function uploadAudio() {
@@ -436,17 +732,21 @@ checkButton.addEventListener("click", async () => {
 });
 
 function renderResult(result) {
+  latestResult = result;
   setScore(result.similarity);
   gradeText.textContent = result.grade;
   commentText.textContent = result.comment;
   finalScore.textContent = `${result.similarity}%`;
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
+  renderMetrics(result);
   renderReasons(result.reasons);
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
   latestShareCopy = buildShareCopy(result);
   shareText.textContent = latestShareCopy;
+  saveHistory(result);
+  generateShareImage(result);
   showSettlementPage();
 }
 
@@ -465,6 +765,11 @@ shareButton.addEventListener("click", async () => {
   }
 
   try {
+    if (await shareGeneratedImage()) {
+      shareButton.textContent = "分享图已唤起";
+      return;
+    }
+
     if (navigator.share) {
       await navigator.share({
         title: "我的哈基米结算单",
@@ -486,6 +791,27 @@ shareButton.addEventListener("click", async () => {
   }
 });
 
+saveShareButton.addEventListener("click", () => {
+  if (!latestShareUrl) {
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = latestShareUrl;
+  link.download = "hachimi-result.png";
+  link.click();
+});
+
+wechatShareButton.addEventListener("click", () => openPlatformShare("wechat"));
+qqShareButton.addEventListener("click", () => openPlatformShare("qq"));
+weiboShareButton.addEventListener("click", () => openPlatformShare("weibo"));
+
+clearHistoryButton.addEventListener("click", () => {
+  localStorage.removeItem(historyKey);
+  renderHistory();
+});
+
 againButton.addEventListener("click", resetAudio);
 
+renderHistory();
 resetAudio();
