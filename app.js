@@ -11,6 +11,16 @@ const scoreText = document.querySelector("#scoreText");
 const gradeText = document.querySelector("#gradeText");
 const commentText = document.querySelector("#commentText");
 const modeText = document.querySelector("#modeText");
+const stagePage = document.querySelector(".stage");
+const settlementPage = document.querySelector("#settlementPage");
+const settlementBadge = document.querySelector("#settlementBadge");
+const settlementLead = document.querySelector("#settlementLead");
+const finalScore = document.querySelector("#finalScore");
+const finalGrade = document.querySelector("#finalGrade");
+const finalComment = document.querySelector("#finalComment");
+const shareText = document.querySelector("#shareText");
+const shareButton = document.querySelector("#shareButton");
+const againButton = document.querySelector("#againButton");
 
 let mediaRecorder;
 let stream;
@@ -28,6 +38,8 @@ const localComments = [
   "听感已经开始摇摆，哈基米指数正在悄悄上桌。",
   "有点抽象，有点可爱，还有一点不讲道理的上头。"
 ];
+
+let latestShareCopy = "";
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -76,6 +88,7 @@ function resetAudio() {
   setScore(null);
   gradeText.textContent = "等待一声哈基米";
   commentText.textContent = "录音完成后点击检测，结果会在这里冒出来。";
+  showEntryPage();
 }
 
 async function startRecording() {
@@ -179,6 +192,53 @@ function decorateResult(result) {
   };
 }
 
+function getBadgeText(similarity) {
+  if (similarity >= 85) {
+    return "神级认证";
+  }
+
+  if (similarity >= 60) {
+    return "正牌认证";
+  }
+
+  if (similarity >= 30) {
+    return "半熟认证";
+  }
+
+  return "待修炼认证";
+}
+
+function getLeadText(similarity) {
+  if (similarity >= 85) {
+    return "哈基米浓度爆表，猫猫频道已经收到你的信号。";
+  }
+
+  if (similarity >= 60) {
+    return "节奏、味道、可爱电波都在线，已经很哈基米了。";
+  }
+
+  if (similarity >= 30) {
+    return "有一点哈基米味儿，还差一口蜂蜜水的距离。";
+  }
+
+  return "这次还在热身，下一声也许就会突然变哈基米。";
+}
+
+function buildShareCopy(result) {
+  return `我刚测了哈基米浓度：${result.similarity}%｜${result.grade}。${result.comment}`;
+}
+
+function showEntryPage() {
+  stagePage.hidden = false;
+  settlementPage.hidden = true;
+}
+
+function showSettlementPage() {
+  stagePage.hidden = true;
+  settlementPage.hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function setScore(value) {
   if (value === null) {
     scoreText.textContent = "--";
@@ -237,6 +297,43 @@ function renderResult(result) {
   setScore(result.similarity);
   gradeText.textContent = result.grade;
   commentText.textContent = result.comment;
+  finalScore.textContent = `${result.similarity}%`;
+  finalGrade.textContent = result.grade;
+  finalComment.textContent = result.comment;
+  settlementBadge.textContent = getBadgeText(result.similarity);
+  settlementLead.textContent = getLeadText(result.similarity);
+  latestShareCopy = buildShareCopy(result);
+  shareText.textContent = latestShareCopy;
+  showSettlementPage();
 }
+
+shareButton.addEventListener("click", async () => {
+  if (!latestShareCopy) {
+    return;
+  }
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "我的哈基米结算单",
+        text: latestShareCopy,
+        url: window.location.href
+      });
+      shareButton.textContent = "分享完成";
+      return;
+    }
+
+    await navigator.clipboard.writeText(latestShareCopy);
+    shareButton.textContent = "文案已复制";
+  } catch (error) {
+    shareButton.textContent = "分享未完成";
+  } finally {
+    window.setTimeout(() => {
+      shareButton.textContent = "分享结果";
+    }, 1600);
+  }
+});
+
+againButton.addEventListener("click", resetAudio);
 
 resetAudio();
