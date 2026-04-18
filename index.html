@@ -81,6 +81,42 @@
           </section>
         </div>
       </section>
+
+      <section class="settlement" id="settlementPage" aria-labelledby="settlement-title" hidden>
+        <div class="settlement-visual">
+          <img class="settlement-cat" src="./assets/hachimi-cat.svg" alt="哈基米结算猫咪" />
+          <div class="settlement-badge" id="settlementBadge">哈基米认证</div>
+        </div>
+
+        <div class="settlement-copy">
+          <p class="eyebrow">Hachimi Result</p>
+          <h1 id="settlement-title">你的哈基米结算单</h1>
+          <p class="lead" id="settlementLead">检测完成，哈基米评委团已经给出结果。</p>
+        </div>
+
+        <div class="settlement-card" aria-label="检测结算结果">
+          <div class="settlement-score">
+            <span id="finalScore">--%</span>
+            <small>相似度</small>
+          </div>
+
+          <div class="settlement-rank">
+            <p>称号</p>
+            <h2 id="finalGrade">等待揭晓</h2>
+          </div>
+
+          <p class="settlement-comment" id="finalComment">录音完成后，哈基米宇宙会给你一个答案。</p>
+
+          <div class="share-box">
+            <p id="shareText">我刚测了哈基米浓度，结果正在生成。</p>
+          </div>
+
+          <div class="settlement-actions">
+            <button class="primary" id="shareButton" type="button">分享结果</button>
+            <button class="secondary" id="againButton" type="button">再测一次</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script src="./app.js"></script>
