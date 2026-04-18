@@ -112,9 +112,11 @@ class HachimiHandler(SimpleHTTPRequestHandler):
 
 
 def main() -> None:
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "4173"))
-    server = ThreadingHTTPServer(("127.0.0.1", port), HachimiHandler)
-    print(f"Hachimi server running at http://127.0.0.1:{port}/")
+    server = ThreadingHTTPServer((host, port), HachimiHandler)
+    display_host = "127.0.0.1" if host == "0.0.0.0" else host
+    print(f"Hachimi server running at http://{display_host}:{port}/")
     print("Reference audio:", REFERENCE_AUDIO if REFERENCE_AUDIO.exists() else "not configured; using heuristic mode")
     server.serve_forever()
 
