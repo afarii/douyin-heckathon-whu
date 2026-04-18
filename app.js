@@ -193,13 +193,6 @@ fileInput.addEventListener("change", (event) => {
   timerText.textContent = "已选择";
 });
 
-function getLocalResult() {
-  const fileFactor = Math.min((audioBlob?.size || 1) / 24000, 1);
-  const entropy = Math.abs(Math.sin((audioBlob?.size || 7) * 0.00137));
-  const similarity = Math.round(28 + fileFactor * 35 + entropy * 37);
-  return decorateResult({ similarity });
-}
-
 function decorateResult(result) {
   const similarity = Math.max(0, Math.min(100, Math.round(result.similarity ?? 0)));
   let grade = "不像哈基米";
@@ -561,7 +554,16 @@ async function uploadAudio() {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.status}`);
+    let message = `后端校验失败：${response.status}`;
+    try {
+      const payload = await response.json();
+      if (payload?.error) {
+        message = payload.error;
+      }
+    } catch (error) {
+      // Ignore JSON parse errors and keep the HTTP status message.
+    }
+    throw new Error(message);
   }
 
   return decorateResult(await response.json());
@@ -655,15 +657,20 @@ checkButton.addEventListener("click", async () => {
 
   try {
     const result = await uploadAudio();
-    modeText.textContent = "API 模式";
+    modeText.textContent = "后端校验";
     renderResult(result);
   } catch (error) {
     await new Promise((resolve) => window.setTimeout(resolve, 520));
-    modeText.textContent = "Mock 模式";
-    renderResult(getLocalResult());
+    latestResult = null;
+    latestShareCopy = "";
+    modeText.textContent = "后端校验失败";
+    gradeText.textContent = "未完成校验";
+    commentText.textContent = error instanceof Error ? error.message : "当前无法连接后端，未返回有效的相似度结果。";
+    renderReasons(["当前分数必须由后端返回；本次未使用前端本地 Mock 结果。"]);
+    showEntryPage();
   } finally {
     checkButton.disabled = false;
-    setStatus("检测完成");
+    setStatus(latestResult ? "检测完成" : "等待后端");
   }
 });
 
