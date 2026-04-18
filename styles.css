@@ -1,15 +1,20 @@
 :root {
   color-scheme: light;
-  --ink: #171717;
-  --muted: #646464;
-  --paper: #fffaf2;
+  --ink: #2d2016;
+  --muted: #735f4a;
+  --paper: #f6fbf7;
   --surface: #ffffff;
-  --line: #ded6ca;
-  --rose: #d94863;
-  --teal: #118a8a;
-  --yellow: #f2c14e;
-  --green: #3a9f6f;
-  --shadow: 0 18px 45px rgba(23, 23, 23, 0.12);
+  --line: #eadfd4;
+  --orange: #ff6b35;
+  --orange-dark: #e85a28;
+  --rose: #ef476f;
+  --teal: #118ab2;
+  --yellow: #ffd166;
+  --green: #06a77d;
+  --soft-orange: #fff0e7;
+  --soft-blue: #eef8fb;
+  --shadow: 0 14px 32px rgba(255, 107, 53, 0.13);
+  --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #ff9f1c 100%);
 }
 
 * {
@@ -20,11 +25,11 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family:
-    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(17, 138, 138, 0.12), transparent 32%),
-    linear-gradient(315deg, rgba(217, 72, 99, 0.12), transparent 38%),
+    linear-gradient(135deg, rgba(255, 107, 53, 0.13), transparent 30%),
+    linear-gradient(315deg, rgba(17, 138, 178, 0.1), transparent 34%),
     var(--paper);
 }
 
@@ -36,6 +41,17 @@ input {
 button {
   border: 0;
   cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible,
+label:focus-within {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
 }
 
 button:disabled {
@@ -51,7 +67,7 @@ button:disabled {
 }
 
 .stage {
-  width: min(1120px, 100%);
+  width: min(980px, 100%);
 }
 
 .stage[hidden],
@@ -61,15 +77,15 @@ button:disabled {
 
 .intro {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 20px;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .mascot {
-  width: 132px;
-  height: 132px;
+  width: 116px;
+  height: 116px;
   object-fit: contain;
   filter: drop-shadow(0 12px 18px rgba(23, 23, 23, 0.14));
 }
@@ -77,7 +93,7 @@ button:disabled {
 .eyebrow,
 .step {
   margin: 0 0 8px;
-  color: var(--teal);
+  color: var(--orange);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -93,8 +109,9 @@ p {
 
 h1 {
   margin-bottom: 10px;
-  font-size: clamp(2.25rem, 3.9rem, 4.25rem);
+  font-size: 3rem;
   line-height: 1;
+  letter-spacing: 0;
 }
 
 .lead {
@@ -107,8 +124,8 @@ h1 {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.78fr);
+  gap: 18px;
   align-items: stretch;
 }
 
@@ -117,7 +134,7 @@ h1 {
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow);
 }
 
@@ -141,7 +158,7 @@ h2 {
   padding: 7px 10px;
   border-radius: 8px;
   color: #ffffff;
-  background: var(--ink);
+  background: var(--orange);
   font-size: 0.82rem;
   font-weight: 700;
   text-align: center;
@@ -161,13 +178,13 @@ h2 {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff4e0;
+  background: var(--soft-orange);
 }
 
 .meter span {
   min-height: 18px;
   border-radius: 8px 8px 3px 3px;
-  background: var(--teal);
+  background: var(--orange);
   transform-origin: bottom;
   transition: height 140ms ease;
 }
@@ -177,7 +194,7 @@ h2 {
 }
 
 .meter span:nth-child(3n) {
-  background: var(--green);
+  background: var(--teal);
 }
 
 .meter.recording span {
@@ -251,13 +268,14 @@ h2 {
 
 .primary {
   color: #ffffff;
-  background: var(--rose);
-  box-shadow: 0 10px 20px rgba(217, 72, 99, 0.22);
+  background: var(--gradient-primary);
+  box-shadow: 0 10px 22px rgba(255, 107, 53, 0.26);
 }
 
 .secondary {
-  color: var(--ink);
-  background: #e9e1d4;
+  color: var(--orange-dark);
+  border: 1px solid rgba(255, 107, 53, 0.32);
+  background: #ffffff;
 }
 
 .upload {
@@ -266,7 +284,7 @@ h2 {
   place-items: center;
   border: 1px dashed var(--teal);
   color: var(--teal);
-  background: #eefbfa;
+  background: var(--soft-blue);
   cursor: pointer;
 }
 
@@ -285,10 +303,9 @@ audio {
 
 .sample-player {
   margin-top: 14px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
 }
 
 .sample-player audio {
@@ -297,7 +314,7 @@ audio {
 
 .sample-title {
   margin-bottom: 4px;
-  color: var(--teal);
+  color: var(--orange);
   font-weight: 900;
 }
 
@@ -354,6 +371,7 @@ audio {
   font-size: 3rem;
   line-height: 1;
   font-weight: 900;
+  color: var(--orange-dark);
 }
 
 .score-copy span {
@@ -400,9 +418,9 @@ h3 {
   content: "";
   position: absolute;
   inset: 18px;
-  border: 2px solid rgba(17, 138, 138, 0.28);
+  border: 2px solid rgba(255, 107, 53, 0.28);
   border-radius: 8px;
-  background: #eefbfa;
+  background: var(--soft-orange);
   transform: rotate(5deg);
 }
 
@@ -444,7 +462,7 @@ h3 {
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: var(--shadow);
 }
 
@@ -454,7 +472,7 @@ h3 {
   margin: 0 auto 18px;
   display: grid;
   place-items: center;
-  border: 12px solid var(--teal);
+  border: 12px solid var(--orange);
   border-radius: 50%;
   background: #ffffff;
 }
@@ -479,7 +497,7 @@ h3 {
 
 .settlement-rank p {
   margin-bottom: 6px;
-  color: var(--teal);
+  color: var(--orange);
   font-weight: 900;
 }
 
@@ -502,7 +520,7 @@ h3 {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #eefbfa;
+  background: var(--soft-blue);
   text-align: left;
 }
 
@@ -524,7 +542,7 @@ h3 {
   padding: 16px;
   border: 1px dashed var(--rose);
   border-radius: 8px;
-  background: #fff4e0;
+  background: var(--soft-orange);
   color: var(--ink);
 }
 
@@ -561,7 +579,7 @@ h3 {
   }
 
   h1 {
-    font-size: 2.6rem;
+    font-size: 2.5rem;
   }
 
   .settlement-score span {
@@ -593,7 +611,7 @@ h3 {
   }
 
   h1 {
-    font-size: 2.1rem;
+    font-size: 2rem;
   }
 
   .timer {
