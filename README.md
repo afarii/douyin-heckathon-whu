@@ -85,6 +85,12 @@ audio
 
 后端会优先读取 `backend/reference/hachimi.wav` 作为参考音频。没有参考音频时，会进入启发式模式，根据短促、明亮、重复节奏等哈基米式声音特征评分。
 
+参考素材使用 `基米素材/圆头耄耋哈气5分钟 - 1.studio_video_1744227455077.mp4(Av114309698951437,P1).mp3`。该文件是 5 分钟循环音频，建议先裁剪成 5 到 8 秒的代表性 WAV 片段：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\prepare_reference.ps1
+```
+
 ### 相似度方案
 
 后端会先把前端录音转换成 WAV，再读取 PCM 数据并进行预处理：
