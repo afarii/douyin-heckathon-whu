@@ -1,0 +1,34 @@
+[32m✔ hachimi_scoring FeatureVector: defaults fill fixed fields and reject unknown fields [90m(1.4313ms)[39m[39m
+[32m✔ hachimi_scoring FeatureVector: rejects illegal types and ranges with field [90m(0.626ms)[39m[39m
+[32m✔ hachimi_scoring audio features: tone dominantFreq approximates tone frequency [90m(23.3094ms)[39m[39m
+[32m✔ hachimi_scoring audio features: trims leading/trailing silence [90m(5.0286ms)[39m[39m
+[32m✔ hachimi_scoring quantize: clamp handles bounds and NaN [90m(0.5701ms)[39m[39m
+[32m✔ hachimi_scoring quantize: four formulas match spec [90m(0.3349ms)[39m[39m
+[32m✔ hachimi_scoring HIS: Audio_HIS formula uses weights (6.1/6.2) [90m(0.1303ms)[39m[39m
+[32m✔ hachimi_scoring HIS: hisLevel mapping follows 6.3 ranges [90m(0.1406ms)[39m[39m
+[32m✔ hachimi_scoring HIS: hisLevel profiles match title/description/color exactly [90m(0.3169ms)[39m[39m
+[32m✔ hachimi_scoring HIS: radarData follows 6.4 formulas [90m(0.2887ms)[39m[39m
+[32m✔ hachimi_scoring HIS: computeHachimiHisScoring has explicit defaults and stable output shape [90m(1.0954ms)[39m[39m
+[32m✔ hachimi_scoring templates: T1-T6 文案逐字一致 [90m(0.6641ms)[39m[39m
+[32m✔ hachimi_scoring template_compare: 评分/评级/对比文案 [90m(0.5503ms)[39m[39m
+[32m✔ hachimi_scoring pk: bonus 与胜负文案 [90m(0.3238ms)[39m[39m
+[32m✔ hachimi_scoring challenge_code: Base64(JSON)+HMAC验签+7天过期+文案 [90m(1.1842ms)[39m[39m
+[32m✔ FeatureVector: default initialization uses explicit defaults and disallows extra fields [90m(1.0301ms)[39m[39m
+[32m✔ FeatureVector: validation rejects illegal ratios and negative durations [90m(0.2221ms)[39m[39m
+[32m✔ Hidden personality: MEOOOW has priority over SILENT [90m(0.176ms)[39m[39m
+[32m✔ Hidden personality: SILENT triggers by avgDB < 20 or duration < 0.3 [90m(0.1106ms)[39m[39m
+[32m✔ Dimension 1 H/S: hard H, hard S, boundary by his [90m(0.3039ms)[39m[39m
+[32m✔ Dimension 2/3/4: boundary and hard branches produce correct letters [90m(0.1045ms)[39m[39m
+[32m✔ Personality composition: returns 4-letter code and profile [90m(0.5156ms)[39m[39m
+[32m✔ Catalog: all 18 types exist and have stable field set [90m(0.2559ms)[39m[39m
+[32m✔ WAV feature extraction: dominantFreq approximates tone frequency [90m(13.8361ms)[39m[39m
+[32m✔ ui_copy: renderCopy replaces {key} placeholders and is stable on missing params [90m(1.1074ms)[39m[39m
+[32m✔ ui_copy: UI_COPY contains values from 04-界面文案.md [90m(42.0651ms)[39m[39m
+[34mℹ tests 26[39m
+[34mℹ suites 0[39m
+[34mℹ pass 26[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 251.0063[39m

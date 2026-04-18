@@ -3,7 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>哈基米相似度测试</title>
+    <title>哈气模拟器 - 测测你的哈吉米TI</title>
+    <meta
+      name="description"
+      content="基于耄耋哈吉米网络热梗的趣味互动应用。录制你的哈气音频，AI智能分析你的哈气人格类型，与全球哈气侠一较高下！"
+    />
+    <meta property="og:title" content="哈气模拟器 - 测测你的哈吉米TI人格" />
+    <meta
+      property="og:description"
+      content="基于耄耋哈吉米网络热梗的趣味互动应用。录制你的哈气音频，AI智能分析你的哈气人格类型！"
+    />
+    <meta property="og:image" content="https://yourdomain.com/assets/og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://yourdomain.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="哈气模拟器 - 测测你的哈吉米TI人格" />
+    <meta name="twitter:description" content="录制你的哈气，发现你的猫格！16+2种人格类型等你解锁！" />
+    <meta name="twitter:image" content="https://yourdomain.com/assets/twitter-card.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -12,9 +28,15 @@
         <div class="intro">
           <img class="mascot" src="./assets/hachimi-cat.svg" alt="哈基米猫咪" />
           <div>
+<<<<<<< Updated upstream
             <p class="eyebrow">Hachimi Voice Check</p>
             <h1 id="page-title">测测你的哈基米浓度</h1>
             <p class="lead">先听示例，再录一声。哈基米评委团会告诉你像在哪里、差在哪里。</p>
+=======
+            <p class="eyebrow">测测你的哈吉米TI人格</p>
+            <h1 id="page-title">哈气模拟器 🐱</h1>
+            <p class="lead">录制你的哈气，发现你的猫格</p>
+>>>>>>> Stashed changes
           </div>
         </div>
 
@@ -23,9 +45,9 @@
             <div class="panel-head">
               <div>
                 <p class="step">01</p>
-                <h2 id="record-title">录音或上传</h2>
+                <h2 id="record-title">录制你的哈气 🎤</h2>
               </div>
-              <span class="status" id="statusText">准备就绪</span>
+              <span class="status" id="statusText">准备好了吗？</span>
             </div>
 
             <div class="meter" aria-hidden="true">
@@ -42,8 +64,8 @@
             <p class="timer" id="timerText">00:00</p>
 
             <div class="actions">
-              <button class="primary" id="recordButton" type="button">开始录音</button>
-              <button class="secondary" id="resetButton" type="button" disabled>重新开始</button>
+              <button class="primary" id="recordButton" type="button">🎤 按住录制</button>
+              <button class="secondary" id="resetButton" type="button" disabled>🔄 重新录制</button>
             </div>
 
             <div class="sample-player" aria-label="哈基米示例音频">
@@ -66,7 +88,7 @@
             <div class="panel-head">
               <div>
                 <p class="step">02</p>
-                <h2 id="result-title">检测结果</h2>
+                <h2 id="result-title">你的哈气报告 📊</h2>
               </div>
               <span class="mode" id="modeText">Mock 模式</span>
             </div>
@@ -82,10 +104,10 @@
               </div>
             </div>
 
-            <h3 id="gradeText">等待一声哈基米</h3>
-            <p class="comment" id="commentText">录音完成后点击检测，结果会在这里冒出来。</p>
+            <h3 id="gradeText">HIS 评分</h3>
+            <p class="comment" id="commentText">录制完成！正在分析你的哈气……</p>
 
-            <button class="primary full" id="checkButton" type="button" disabled>检测哈基米浓度</button>
+            <button class="primary full" id="checkButton" type="button" disabled>生成哈气报告</button>
           </section>
         </div>
       </section>
@@ -98,8 +120,8 @@
 
         <div class="settlement-copy">
           <p class="eyebrow">Hachimi Result</p>
-          <h1 id="settlement-title">你的哈基米结算单</h1>
-          <p class="lead" id="settlementLead">检测完成，哈基米评委团已经给出结果。</p>
+          <h1 id="settlement-title">你的哈气报告 📊</h1>
+          <p class="lead" id="settlementLead">录制完成！正在分析你的哈气……</p>
         </div>
 
         <div class="settlement-card" aria-label="检测结算结果">
@@ -128,12 +150,12 @@
 
           <div class="settlement-actions">
             <button class="primary" id="shareButton" type="button">分享结果</button>
-            <button class="secondary" id="againButton" type="button">再测一次</button>
+            <button class="secondary" id="againButton" type="button">再来一次</button>
           </div>
         </div>
       </section>
     </main>
 
-    <script src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>

@@ -1,0 +1,15 @@
+{
+  "weights": {
+    "dbScore": 0.4,
+    "freqScore": 0.25,
+    "durationScore": 0.2,
+    "chaosScore": 0.15
+  },
+  "ranges": {
+    "scoreMin": 0,
+    "scoreMax": 10,
+    "hisLevelMin": 1,
+    "hisLevelMax": 9
+  }
+}
+

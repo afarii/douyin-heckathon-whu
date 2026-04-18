@@ -1,3 +1,7 @@
+import { analyzePersonality, featureVectorFromWav } from "./hajimi_ti/index.js";
+import { computeHachimiHisScoring, createFeatureVector, extractAudioFeaturesFromWav } from "./hachimi_scoring/browser.js";
+import { UI_COPY, renderCopy } from "./ui_copy/index.js";
+
 const recordButton = document.querySelector("#recordButton");
 const resetButton = document.querySelector("#resetButton");
 const checkButton = document.querySelector("#checkButton");
@@ -30,6 +34,15 @@ let audioBlob;
 let audioFileName = "hachimi-recording.webm";
 let startedAt = 0;
 let timerId;
+const MAX_RECORD_SECONDS = 5;
+let lastPointerDownAt = 0;
+
+const COPY_GLOBAL = UI_COPY["一、全局文案"];
+const COPY_RECORD = UI_COPY["三、录制页面"];
+const COPY_LOADING = UI_COPY["四、分析加载页"];
+const COPY_RESULT = UI_COPY["五、结果页面"];
+const COPY_SHARE = UI_COPY["九、分享功能文案"];
+const COPY_AUDIO_ERRORS = UI_COPY["十一、错误与异常文案"]["11.2 音频错误"];
 
 const ringLength = 326.73;
 const sampleAudioPath = "./基米素材/haqi.mp3";
@@ -42,6 +55,13 @@ const localComments = [
 ];
 
 let latestShareCopy = "";
+
+const recordingSupport = getRecordingSupport();
+if (!recordingSupport.ok) {
+  recordButton.disabled = true;
+  setStatus(recordingSupport.statusText);
+  commentText.textContent = recordingSupport.detailText;
+}
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -58,7 +78,13 @@ function startTimer() {
   startedAt = Date.now();
   timerText.textContent = "00:00";
   timerId = window.setInterval(() => {
-    timerText.textContent = formatTime(Date.now() - startedAt);
+    const elapsed = Date.now() - startedAt;
+    timerText.textContent = formatTime(elapsed);
+    const remainingSeconds = Math.max(0, MAX_RECORD_SECONDS - Math.floor(elapsed / 1000));
+    setStatus(renderCopy(COPY_RECORD["3.2 录制中状态"].实时提示, { 剩余秒数: remainingSeconds }));
+    if (elapsed >= MAX_RECORD_SECONDS * 1000) {
+      stopRecording();
+    }
   }, 250);
 }
 
@@ -84,18 +110,35 @@ function resetAudio() {
   audioPreview.load();
   checkButton.disabled = true;
   resetButton.disabled = true;
+  recordButton.textContent = COPY_RECORD["3.2 录制前状态"].按钮文案.主按钮;
   timerText.textContent = "00:00";
   meter.classList.remove("recording");
-  setStatus("准备就绪");
+  setStatus(COPY_RECORD["3.2 录制前状态"].提示文案.split("\n")[0] || "准备好了吗？");
   setScore(null);
-  gradeText.textContent = "等待一声哈基米";
-  commentText.textContent = "录音完成后点击检测，结果会在这里冒出来。";
+  gradeText.textContent = COPY_RESULT["5.2 HIS评分展示区"].评分标题;
+  commentText.textContent = COPY_RECORD["3.3 录制后状态"].自动跳转提示;
   showEntryPage();
 }
 
 async function startRecording() {
+  if (!recordingSupport.ok) {
+    setStatus(recordingSupport.statusText);
+    commentText.textContent = recordingSupport.detailText;
+    return;
+  }
+  let pendingUserMediaPromise;
+  let timeoutId;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    pendingUserMediaPromise = navigator.mediaDevices.getUserMedia({ audio: true });
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        const err = new Error("getUserMedia timeout");
+        err.name = "TimeoutError";
+        reject(err);
+      }, 10000);
+    });
+    stream = await Promise.race([pendingUserMediaPromise, timeoutPromise]);
+    window.clearTimeout(timeoutId);
     mediaRecorder = new MediaRecorder(stream);
     chunks = [];
 
@@ -111,17 +154,24 @@ async function startRecording() {
       stream.getTracks().forEach((track) => track.stop());
       stream = null;
       meter.classList.remove("recording");
-      setStatus("录音完成");
+      setStatus(COPY_RECORD["3.3 录制后状态"].自动跳转提示);
     });
 
     mediaRecorder.start();
-    recordButton.textContent = "停止录音";
-    setStatus("正在录音");
+    recordButton.textContent = COPY_RECORD["3.2 录制中状态"].停止按钮;
+    setStatus(renderCopy(COPY_RECORD["3.2 录制中状态"].实时提示, { 剩余秒数: MAX_RECORD_SECONDS }));
     meter.classList.add("recording");
     startTimer();
   } catch (error) {
-    setStatus("麦克风不可用");
-    commentText.textContent = "浏览器没有拿到麦克风权限。可以改用上传音频文件。";
+    window.clearTimeout(timeoutId);
+    if (error && typeof error === "object" && error.name === "TimeoutError") {
+      pendingUserMediaPromise?.then((lateStream) => {
+        lateStream.getTracks().forEach((track) => track.stop());
+      }).catch(() => {});
+    }
+    const { statusText, detailText } = mapRecordingError(error);
+    setStatus(statusText);
+    commentText.textContent = detailText;
   }
 }
 
@@ -132,10 +182,29 @@ function stopRecording() {
 
   mediaRecorder.stop();
   stopTimer();
-  recordButton.textContent = "开始录音";
+  recordButton.textContent = COPY_RECORD["3.2 录制前状态"].按钮文案.主按钮;
 }
 
+recordButton.addEventListener("pointerdown", (event) => {
+  lastPointerDownAt = Date.now();
+  if (recordButton.disabled) return;
+  if (mediaRecorder?.state === "recording") return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  startRecording();
+});
+
+recordButton.addEventListener("pointerup", () => {
+  stopRecording();
+});
+
+recordButton.addEventListener("pointercancel", () => {
+  stopRecording();
+});
+
 recordButton.addEventListener("click", () => {
+  if (Date.now() - lastPointerDownAt < 400) {
+    return;
+  }
   if (mediaRecorder?.state === "recording") {
     stopRecording();
     return;
@@ -153,16 +222,79 @@ fileInput.addEventListener("change", (event) => {
   }
 
   if (!file.type.startsWith("audio/")) {
-    setStatus("文件不支持");
-    commentText.textContent = "请上传音频文件，哈基米耳朵暂时不听别的。";
+    setStatus(COPY_AUDIO_ERRORS.音频分析失败);
+    commentText.textContent = COPY_AUDIO_ERRORS.音频分析失败;
     return;
   }
 
   stopRecording();
   setAudio(file, file.name);
-  setStatus("已上传");
+  setStatus(COPY_RECORD["3.3 录制后状态"].自动跳转提示);
   timerText.textContent = "已选择";
 });
+
+function getRecordingSupport() {
+  if (!window.isSecureContext) {
+    return {
+      ok: false,
+      statusText: COPY_RECORD["3.4 录制错误提示"].HTTPS要求,
+      detailText: COPY_RECORD["3.4 录制错误提示"].HTTPS要求,
+    };
+  }
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+    return {
+      ok: false,
+      statusText: COPY_GLOBAL["1.3 全局提示语"].浏览器不支持,
+      detailText: COPY_GLOBAL["1.3 全局提示语"].浏览器不支持,
+    };
+  }
+  if (typeof MediaRecorder === "undefined") {
+    return {
+      ok: false,
+      statusText: COPY_GLOBAL["1.3 全局提示语"].浏览器不支持,
+      detailText: COPY_GLOBAL["1.3 全局提示语"].Safari特别提示,
+    };
+  }
+  return { ok: true, statusText: "", detailText: "" };
+}
+
+function mapRecordingError(error) {
+  const name = error && typeof error === "object" ? error.name : "";
+  if (name === "TimeoutError") {
+    return {
+      statusText: COPY_GLOBAL["1.3 全局提示语"].浏览器不支持,
+      detailText: COPY_GLOBAL["1.3 全局提示语"].浏览器不支持,
+    };
+  }
+  if (!window.isSecureContext || name === "SecurityError") {
+    return {
+      statusText: COPY_RECORD["3.4 录制错误提示"].HTTPS要求,
+      detailText: COPY_RECORD["3.4 录制错误提示"].HTTPS要求,
+    };
+  }
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    return {
+      statusText: COPY_RECORD["3.4 录制错误提示"].麦克风权限被拒绝,
+      detailText: COPY_RECORD["3.4 录制错误提示"].麦克风权限被拒绝,
+    };
+  }
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return {
+      statusText: COPY_RECORD["3.4 录制错误提示"].麦克风不可用,
+      detailText: COPY_RECORD["3.4 录制错误提示"].麦克风不可用,
+    };
+  }
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return {
+      statusText: COPY_AUDIO_ERRORS.音频中断,
+      detailText: COPY_AUDIO_ERRORS.音频中断,
+    };
+  }
+  return {
+    statusText: COPY_AUDIO_ERRORS.音频分析失败,
+    detailText: COPY_AUDIO_ERRORS.音频分析失败,
+  };
+}
 
 function getLocalResult() {
   const fileFactor = Math.min((audioBlob?.size || 1) / 24000, 1);
@@ -244,7 +376,7 @@ function getLeadText(similarity) {
 }
 
 function buildShareCopy(result) {
-  return `我刚测了哈基米浓度：${result.similarity}%｜${result.grade}。${result.comment}`;
+  return COPY_SHARE["9.2 分享文案（复制到剪贴板）"].文案;
 }
 
 function showEntryPage() {
@@ -274,7 +406,12 @@ function setScore(value) {
 
 async function uploadAudio() {
   const uploadBlob = await toWavBlob(audioBlob);
+<<<<<<< Updated upstream
   const referenceBlob = await getReferenceWavBlob();
+=======
+  const scoringResult = await analyzeScoringFromWav(uploadBlob);
+  const personalityResult = await analyzePersonalityFromWav(uploadBlob);
+>>>>>>> Stashed changes
   const formData = new FormData();
   formData.append("audio", uploadBlob, audioFileName.replace(/\.[^.]+$/, "") + ".wav");
   if (referenceBlob) {
@@ -290,7 +427,8 @@ async function uploadAudio() {
     throw new Error(`Upload failed: ${response.status}`);
   }
 
-  return decorateResult(await response.json());
+  const result = decorateResult(await response.json());
+  return mergeAnalysis(result, scoringResult, personalityResult);
 }
 
 async function getReferenceWavBlob() {
@@ -369,38 +507,130 @@ function writeString(view, offset, value) {
   }
 }
 
+async function analyzePersonalityFromWav(blob) {
+  try {
+    const buffer = await blob.arrayBuffer();
+    const vector = featureVectorFromWav(buffer);
+    return analyzePersonality(vector);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function analyzeScoringFromWav(blob) {
+  try {
+    const buffer = await blob.arrayBuffer();
+    const features = extractAudioFeaturesFromWav(buffer);
+    const his = computeHachimiHisScoring(features);
+    const featureVector02 = createFeatureVector({
+      ...features,
+      ...his,
+      hisLevel: his.hisLevel,
+      radarData: his.radarData,
+      personality: "",
+      personalityMatch: 0,
+    });
+    return {
+      featureVector02,
+      hisScore: his.hisScore,
+      hisLevel: his.hisLevel,
+      hisTitle: his.profile.title,
+      hisDescription: his.profile.description,
+      hisColor: his.profile.color,
+      radarData: his.radarData,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function mergeAnalysis(base, scoringResult, personalityResult) {
+  const merged = { ...base };
+  if (scoringResult) {
+    Object.assign(merged, scoringResult);
+  }
+  if (personalityResult) {
+    Object.assign(merged, personalityResult);
+  }
+  if (merged.featureVector02 && personalityResult) {
+    try {
+      merged.featureVector02 = createFeatureVector({
+        ...merged.featureVector02,
+        personality: personalityResult.personality,
+        personalityMatch: personalityResult.personalityMatch,
+      });
+    } catch (error) {
+      merged.featureVector02 = merged.featureVector02;
+    }
+  }
+  return merged;
+}
+
 checkButton.addEventListener("click", async () => {
   if (!audioBlob) {
     return;
   }
 
   checkButton.disabled = true;
-  setStatus("检测中");
-  gradeText.textContent = "正在听...";
-  commentText.textContent = "哈基米评委团正在认真摇头。";
+  const steps = COPY_LOADING["4.1 加载动画文案"].步骤;
+  let stepIndex = 0;
+  setStatus(steps[0] || COPY_GLOBAL["1.3 全局提示语"].页面加载中);
+  gradeText.textContent = steps[1] || steps[0] || gradeText.textContent;
+  commentText.textContent = steps[2] || steps[1] || commentText.textContent;
+  const stepTimer = window.setInterval(() => {
+    stepIndex = (stepIndex + 1) % steps.length;
+    const current = steps[stepIndex];
+    if (current) {
+      setStatus(current);
+    }
+  }, 500);
 
   try {
     const result = await uploadAudio();
-    modeText.textContent = "API 模式";
+    modeText.textContent = " ";
     renderResult(result);
   } catch (error) {
     await new Promise((resolve) => window.setTimeout(resolve, 520));
-    modeText.textContent = "Mock 模式";
-    renderResult(getLocalResult());
+    modeText.textContent = " ";
+    const local = getLocalResult();
+    const wav = await toWavBlob(audioBlob);
+    const scoringResult = await analyzeScoringFromWav(wav);
+    const personalityResult = await analyzePersonalityFromWav(wav);
+    renderResult(mergeAnalysis(local, scoringResult, personalityResult));
   } finally {
+    window.clearInterval(stepTimer);
     checkButton.disabled = false;
-    setStatus("检测完成");
+    setStatus(COPY_RESULT["5.6 结果页底部提示"].提示.split("\n")[0] || "");
   }
 });
 
 function renderResult(result) {
   setScore(result.similarity);
-  gradeText.textContent = result.grade;
-  commentText.textContent = result.comment;
+  gradeText.textContent =
+    result.hisLevel && result.hisTitle ? `Lv.${result.hisLevel} ${result.hisTitle}` : result.grade;
+  let inline = result.comment;
+  if (result.hisScore !== undefined && result.hisLevel && result.hisTitle) {
+    inline = `${inline}｜HIS ${result.hisScore} / 10（Lv.${result.hisLevel} ${result.hisTitle}）`;
+  }
+  if (result.personalityProfile) {
+    inline = `${inline}｜哈吉米TI：${result.personality}「${result.personalityProfile.name}」`;
+  }
+  commentText.textContent = inline;
   finalScore.textContent = `${result.similarity}%`;
+<<<<<<< Updated upstream
   finalGrade.textContent = result.grade;
   finalComment.textContent = result.comment;
   renderReasons(result.reasons);
+=======
+  finalGrade.textContent = result.personalityProfile ? `${result.grade} / ${result.personality} ${result.personalityProfile.name}` : result.grade;
+  if (result.hisScore !== undefined && result.hisLevel && result.hisTitle && result.hisDescription) {
+    finalComment.textContent = result.personalityProfile
+      ? `${result.hisDescription}\n\n${result.personalityProfile.coreDescription}\n\n${result.comment}`
+      : `${result.hisDescription}\n\n${result.comment}`;
+  } else {
+    finalComment.textContent = result.personalityProfile ? `${result.personalityProfile.coreDescription}\n\n${result.comment}` : result.comment;
+  }
+>>>>>>> Stashed changes
   settlementBadge.textContent = getBadgeText(result.similarity);
   settlementLead.textContent = getLeadText(result.similarity);
   latestShareCopy = buildShareCopy(result);

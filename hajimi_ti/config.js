@@ -1,0 +1,33 @@
+export const DEFAULT_MATCH_CONFIG = Object.freeze({
+  hardDimensionMatch: 0.9,
+  boundaryDimensionMatch: 0.65,
+  hiddenMatch: 0.95,
+});
+
+export const DEFAULT_THRESHOLDS = Object.freeze({
+  hidden: {
+    meooow: { dominantFreqHzLt: 1500, lowFreqDurationSecGt: 0.5 },
+    silent: { avgDBLt: 20, durationSecLt: 0.3 },
+  },
+  dimension1: {
+    hiss: { avgDBGt: 65, peakFreqHzGt: 4000 },
+    silence: { avgDBLt: 45, silenceRatioGt: 0.6 },
+    boundary: { hisGt: 5 },
+  },
+  dimension2: {
+    long: { activeDurationSecGt: 1.5, volumeVarianceLt: 0.15 },
+    pulse: { activeDurationSecLt: 0.8, volumeVarianceGt: 0.3 },
+    boundary: { durationMedianSec: 1.0 },
+  },
+  dimension3: {
+    treble: { dominantFreqHzGt: 5000, peakFreqHzGt: 7000 },
+    flat: { dominantFreqHzLt: 3000, lowFreqRatioGt: 0.4 },
+    boundary: { dominantMedianHz: 4000 },
+  },
+  dimension4: {
+    chaos: { pitchChangeRateHzPerSecGt: 500, freqVarianceHz2Gt: 1500 },
+    rhythm: { pitchChangeRateHzPerSecLt: 200, freqVarianceHz2Lt: 500 },
+    boundary: { pitchChangeMedianHzPerSec: 350 },
+  },
+});
+
