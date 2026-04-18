@@ -1,1 +1,3 @@
 server.*.log
+backend/.tmp/
+__pycache__/

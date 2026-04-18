@@ -254,8 +254,9 @@ function setScore(value) {
 }
 
 async function uploadAudio() {
+  const uploadBlob = await toWavBlob(audioBlob);
   const formData = new FormData();
-  formData.append("audio", audioBlob, audioFileName);
+  formData.append("audio", uploadBlob, audioFileName.replace(/\.[^.]+$/, "") + ".wav");
 
   const response = await fetch("/api/upload", {
     method: "POST",
@@ -267,6 +268,70 @@ async function uploadAudio() {
   }
 
   return decorateResult(await response.json());
+}
+
+async function toWavBlob(blob) {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContextClass();
+    const buffer = await audioContext.decodeAudioData(await blob.arrayBuffer());
+    const wav = encodeWav(buffer);
+    await audioContext.close();
+    return new Blob([wav], { type: "audio/wav" });
+  } catch (error) {
+    return blob;
+  }
+}
+
+function encodeWav(buffer) {
+  const channelCount = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const samples = mixToMono(buffer, channelCount);
+  const bytesPerSample = 2;
+  const blockAlign = bytesPerSample;
+  const dataSize = samples.length * bytesPerSample;
+  const output = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(output);
+
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);
+  writeString(view, 36, "data");
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  for (const sample of samples) {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    offset += 2;
+  }
+
+  return output;
+}
+
+function mixToMono(buffer, channelCount) {
+  const samples = new Float32Array(buffer.length);
+  for (let channel = 0; channel < channelCount; channel += 1) {
+    const data = buffer.getChannelData(channel);
+    for (let index = 0; index < data.length; index += 1) {
+      samples[index] += data[index] / channelCount;
+    }
+  }
+  return samples;
+}
+
+function writeString(view, offset, value) {
+  for (let index = 0; index < value.length; index += 1) {
+    view.setUint8(offset + index, value.charCodeAt(index));
+  }
 }
 
 checkButton.addEventListener("click", async () => {
