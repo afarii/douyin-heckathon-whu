@@ -15,6 +15,8 @@ const stagePage = document.querySelector(".stage");
 const settlementPage = document.querySelector("#settlementPage");
 const settlementBadge = document.querySelector("#settlementBadge");
 const settlementLead = document.querySelector("#settlementLead");
+const settlementCat = document.querySelector(".settlement-cat");
+const settlementScore = document.querySelector(".settlement-score");
 const finalScore = document.querySelector("#finalScore");
 const finalGrade = document.querySelector("#finalGrade");
 const finalComment = document.querySelector("#finalComment");
@@ -33,6 +35,12 @@ let timerId;
 
 const ringLength = 326.73;
 const sampleAudioPath = "./基米素材/haqi.mp3";
+const scoreAssets = {
+  high: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%9F%BA%E7%B1%B3%E5%8A%A8%E5%9B%BE1%E7%BB%93%E7%AE%97%E7%94%BB%E9%9D%A2.gif",
+  middle: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%93%88%E5%9F%BA%E7%B1%B34%E4%BD%8E%E5%88%86%E7%BB%93%E7%AE%97%E7%94%BB%E9%9D%A2.gif",
+  low: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E5%93%88%E5%90%89%E7%B1%B3%E7%B4%A0%E6%9D%906%E5%8F%AB%E7%9A%84%E5%A4%AA%E7%83%82%E7%BB%93%E7%AE%97%E7%94%BB%E9%9D%A2.gif",
+  idle: "./%E5%9F%BA%E7%B1%B3%E7%B4%A0%E6%9D%90/%E9%AB%98%E6%B8%85%E5%9F%BA%E7%B1%B3.png"
+};
 
 const localComments = [
   "这不是普通音频，这是正在向猫猫频道发射的哈基米电波。",
@@ -258,18 +266,52 @@ function showSettlementPage() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function getScoreLevel(value) {
+  const safeValue = Math.max(0, Math.min(100, value));
+  if (safeValue >= 85) {
+    return { name: "high", color: "var(--green)", asset: scoreAssets.high };
+  }
+
+  if (safeValue >= 30) {
+    return { name: "middle", color: "var(--yellow)", asset: scoreAssets.middle };
+  }
+
+  return { name: "low", color: "var(--red)", asset: scoreAssets.low };
+}
+
 function setScore(value) {
   if (value === null) {
     scoreText.textContent = "--";
     scoreRing.style.strokeDashoffset = ringLength;
     scoreRing.style.stroke = "var(--teal)";
+    updateSettlementScore(null);
     return;
   }
 
   const safeValue = Math.max(0, Math.min(100, value));
+  const level = getScoreLevel(safeValue);
   scoreText.textContent = `${safeValue}%`;
   scoreRing.style.strokeDashoffset = ringLength - (ringLength * safeValue) / 100;
-  scoreRing.style.stroke = safeValue >= 85 ? "var(--rose)" : safeValue >= 60 ? "var(--green)" : "var(--teal)";
+  scoreRing.style.stroke = level.color;
+  scoreRing.dataset.level = level.name;
+  updateSettlementScore(safeValue);
+}
+
+function updateSettlementScore(value) {
+  if (value === null) {
+    settlementCat.src = scoreAssets.idle;
+    settlementScore.style.setProperty("--score-percent", "0%");
+    settlementScore.style.setProperty("--score-color", "var(--teal)");
+    settlementScore.dataset.level = "idle";
+    return;
+  }
+
+  const safeValue = Math.max(0, Math.min(100, value));
+  const level = getScoreLevel(safeValue);
+  settlementCat.src = level.asset;
+  settlementScore.style.setProperty("--score-percent", `${safeValue}%`);
+  settlementScore.style.setProperty("--score-color", level.color);
+  settlementScore.dataset.level = level.name;
 }
 
 async function uploadAudio() {

@@ -5,6 +5,7 @@
   --paper: #fffaf2;
   --surface: #ffffff;
   --line: #ded6ca;
+  --red: #d7263d;
   --rose: #d94863;
   --teal: #118a8a;
   --yellow: #f2c14e;
@@ -93,7 +94,7 @@ p {
 
 h1 {
   margin-bottom: 10px;
-  font-size: clamp(2.25rem, 3.9rem, 4.25rem);
+  font-size: 3.9rem;
   line-height: 1;
 }
 
@@ -449,24 +450,41 @@ h3 {
 }
 
 .settlement-score {
+  --score-color: var(--teal);
+  --score-percent: 0%;
+  position: relative;
   width: min(260px, 72vw);
   aspect-ratio: 1;
   margin: 0 auto 18px;
   display: grid;
   place-items: center;
-  border: 12px solid var(--teal);
+  padding: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--score-color) var(--score-percent), #eadfce 0);
+}
+
+.settlement-score::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
   border-radius: 50%;
   background: #ffffff;
 }
 
 .settlement-score span {
+  position: relative;
+  z-index: 1;
   display: block;
   font-size: 4.5rem;
   line-height: 0.95;
   font-weight: 950;
+  color: var(--score-color);
 }
 
 .settlement-score small {
+  position: relative;
+  z-index: 1;
   display: block;
   color: var(--muted);
   font-size: 1rem;
