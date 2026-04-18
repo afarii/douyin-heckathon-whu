@@ -49,6 +49,7 @@ class HachimiHandler(SimpleHTTPRequestHandler):
                     "mode": result.mode,
                     "confidence": result.confidence,
                     "reasons": list(result.reasons),
+                    "details": result.details,
                 }
             )
         except ValueError as error:

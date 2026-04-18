@@ -39,8 +39,25 @@ def test_similar_audio_scores_higher() -> None:
     assert close_score > far_score, (close_score, far_score)
     assert 0 <= close_score <= 100
     assert 0 <= far_score <= 100
+    assert far_score <= 62
+
+
+def test_unrelated_audio_is_capped() -> None:
+    root = Path(__file__).resolve().parent / ".tmp" / "tests"
+    root.mkdir(parents=True, exist_ok=True)
+    reference = root / "reference.wav"
+    unrelated = root / "unrelated.wav"
+
+    write_tone(reference, 330, 3.4, seconds=2.0)
+    write_tone(unrelated, 1200, 0.4, seconds=5.0)
+
+    result = analyze_upload(unrelated, reference)
+
+    assert result.similarity <= 45, (result.similarity, result.reasons, result.details)
+    assert any("限制" in reason for reason in result.reasons)
 
 
 if __name__ == "__main__":
     test_similar_audio_scores_higher()
+    test_unrelated_audio_is_capped()
     print("audio similarity tests passed")

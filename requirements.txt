@@ -1,0 +1,6 @@
+# Optional upgrade path for more accurate audio analysis.
+# The current backend works without these dependencies.
+numpy>=1.26
+scipy>=1.12
+librosa>=0.10
+soundfile>=0.12

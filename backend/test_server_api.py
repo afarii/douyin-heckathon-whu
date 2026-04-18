@@ -49,6 +49,7 @@ def test_upload_api_returns_score() -> None:
         assert payload["comment"]
         assert payload["mode"] == "reference"
         assert payload["reasons"]
+        assert payload["details"]["bandSimilarity"] >= 0
     finally:
         server.shutdown()
         server.server_close()
