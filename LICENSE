@@ -1,0 +1,28 @@
+Hachimi License Notice
+
+Copyright (c) 2026 afarii
+
+The source code and documentation in this repository are licensed under the
+GNU Affero General Public License version 3 only (AGPL-3.0-only).
+
+See the full license text at:
+https://www.gnu.org/licenses/agpl-3.0.html
+
+Assets are not licensed under the AGPL.
+
+The following materials are excluded from the open source license:
+
+- audio files
+- image files
+- GIF files
+- media assets under `基米素材/`
+- generated embedded asset files under `assets/generated/`
+- any third-party or user-provided creative materials
+
+These assets may include materials owned by their respective rights holders.
+They are provided only as part of this project demonstration or review context.
+No permission is granted to copy, redistribute, reuse, commercialize, train on,
+or create derivative works from the excluded assets unless you have permission
+from the relevant rights holder.
+
+SPDX-License-Identifier: AGPL-3.0-only
