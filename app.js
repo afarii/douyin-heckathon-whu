@@ -3906,6 +3906,9 @@ function clearShareModalPoster() {
     shareModalImage.hidden = true;
     shareModalImage.removeAttribute("src");
   }
+  if (shareModalCanvas) {
+    shareModalCanvas.hidden = true;
+  }
 }
 
 function drawPosterText(context, text, x, y, width) {
@@ -3990,8 +3993,13 @@ async function generateShareModalPoster(payload) {
     return null;
   }
   latestShareModalUrl = URL.createObjectURL(latestShareModalBlob);
-  shareModalImage.src = latestShareModalUrl;
-  shareModalImage.hidden = false;
+  if (shareModalImage) {
+    shareModalImage.src = latestShareModalUrl;
+    shareModalImage.hidden = true;
+  }
+  if (shareModalCanvas) {
+    shareModalCanvas.hidden = false;
+  }
   return latestShareModalBlob;
 }
 

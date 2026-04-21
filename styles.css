@@ -1227,6 +1227,18 @@ h3 {
   border: 1px solid var(--line);
   background: white;
   display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.share-modal-preview canvas {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  background: white;
+  display: block;
+  image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
