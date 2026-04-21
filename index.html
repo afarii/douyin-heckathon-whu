@@ -98,6 +98,37 @@
             <button class="primary full" id="checkButton" type="button" disabled>检测哈基米浓度</button>
           </section>
         </div>
+
+        <section class="panel reference" id="referencePanel" aria-labelledby="reference-title">
+          <div class="panel-head">
+            <div>
+              <p class="step">03</p>
+              <h2 id="reference-title">参考音频库</h2>
+            </div>
+            <div class="panel-head-actions">
+              <span class="mode" id="referenceStatus">未加载</span>
+              <button class="text-button" id="referenceCollapseButton" type="button" aria-expanded="true" aria-controls="referenceBody">收起</button>
+            </div>
+          </div>
+
+          <div class="reference-body" id="referenceBody">
+            <div class="reference-actions" aria-label="参考音频筛选">
+              <label class="select">
+                <span>人格</span>
+                <select id="referencePersonality"></select>
+              </label>
+              <label class="select">
+                <span>难度</span>
+                <select id="referenceDifficulty"></select>
+              </label>
+              <button class="secondary" id="referenceRecommendedButton" type="button" aria-pressed="false">只看推荐</button>
+            </div>
+
+            <ol class="rank-list" id="referenceList">
+              <li class="empty">加载中...</li>
+            </ol>
+          </div>
+        </section>
       </section>
 
       <section class="settlement" id="settlementPage" role="tabpanel" aria-labelledby="navSettlement settlement-title" hidden>
@@ -166,6 +197,26 @@
             <div class="dimension-chips" id="dimensionBars"></div>
           </div>
 
+          <div class="dimension-box" id="templateCompareBox" aria-labelledby="templateCompareTitle" hidden>
+            <div class="dimension-head">
+              <p id="templateCompareTitle">模板对比</p>
+              <span class="dimension-total" id="templateCompareTotal">--/140</span>
+              <button class="text-button" id="templateCompareShareButton" type="button">分享</button>
+            </div>
+            <p class="template-compare-meta" id="templateCompareMeta"></p>
+            <div class="dimension-bars" id="templateCompareBars"></div>
+          </div>
+
+          <div class="dimension-box" id="challengeCompareBox" aria-labelledby="challengeCompareTitle" hidden>
+            <div class="dimension-head">
+              <p id="challengeCompareTitle">好友PK</p>
+              <span class="dimension-total" id="challengeCompareTotal">--/100</span>
+              <button class="text-button" id="challengeCompareShareButton" type="button">分享</button>
+            </div>
+            <p class="template-compare-meta" id="challengeCompareMeta"></p>
+            <div class="dimension-bars" id="challengeCompareBars"></div>
+          </div>
+
           <div class="reason-box" aria-labelledby="reason-title">
             <p id="reason-title">评分理由</p>
             <ul id="reasonList">
@@ -191,12 +242,13 @@
               <button class="secondary" id="saveShareButton" type="button" disabled>保存分享图</button>
               <button class="secondary" id="wechatShareButton" type="button" disabled>微信</button>
               <button class="secondary" id="qqShareButton" type="button" disabled>QQ</button>
-              <button class="secondary" id="weiboShareButton" type="button" disabled>微博</button>
+              <button class="secondary" id="douyinShareButton" type="button" disabled>抖音</button>
             </div>
           </div>
 
           <div class="settlement-actions">
             <button class="primary" id="shareButton" type="button">分享结果</button>
+            <button class="secondary" id="challengeCreateButton" type="button">发起好友PK</button>
             <button class="secondary" id="againButton" type="button">再测一次</button>
           </div>
         </div>
@@ -210,6 +262,18 @@
               <h1 id="ranking-title">本地排行榜</h1>
             </div>
             <div class="page-actions">
+              <button class="secondary" id="rankingClearButton" type="button">清除本地数据</button>
+              <button class="secondary" id="rankingShareButton" type="button">分享</button>
+            </div>
+          </div>
+          <div class="subtab-bar" role="tablist" aria-label="排行榜子视图">
+            <button class="subtab is-active" id="rankingSubtabBoard" type="button" data-subtab="board" role="tab" aria-selected="true">记录榜</button>
+            <button class="subtab" id="rankingSubtabRanked" type="button" data-subtab="ranked" role="tab" aria-selected="false">排位赛</button>
+            <button class="subtab" id="rankingSubtabPk" type="button" data-subtab="pk" role="tab" aria-selected="false">PK战绩</button>
+          </div>
+
+          <div id="rankingBoardView">
+            <div class="ranking-controls">
               <label class="select">
                 <span>视图</span>
                 <select id="rankingMode">
@@ -218,13 +282,80 @@
                   <option value="personality">分榜（按人格）</option>
                 </select>
               </label>
-              <button class="secondary" id="rankingClearButton" type="button">清除本地数据</button>
+            </div>
+            <p class="lead" id="rankingHint">总榜按 HIS 排序；分榜为最小可用展示，不足时会回退到总榜。</p>
+            <ol class="rank-list" id="rankingList">
+              <li class="empty">还没有记录，先测一次再来看看。</li>
+            </ol>
+          </div>
+
+          <div id="rankingRankedView" hidden>
+            <div class="ranked-head">
+              <div>
+                <p class="eyebrow" id="rankedSeasonMeta">30天赛季</p>
+                <h2 class="ranked-title" id="rankedSeasonTitle">排位赛</h2>
+              </div>
+              <div class="page-actions">
+                <button class="secondary" id="rankedShareButton" type="button">分享排位</button>
+              </div>
+            </div>
+
+            <div class="ranked-kpis">
+              <div class="info-card">
+                <p class="info-title">当前段位</p>
+                <p class="info-main" id="rankedTier">--</p>
+                <p class="info-sub" id="rankedPoints">积分 --</p>
+              </div>
+              <div class="info-card">
+                <p class="info-title">保护盾</p>
+                <p class="info-main" id="rankedShield">--</p>
+                <p class="info-sub" id="rankedFirstWin">今日首胜：--</p>
+              </div>
+              <div class="info-card">
+                <p class="info-title">连胜</p>
+                <p class="info-main" id="rankedStreak">--</p>
+                <p class="info-sub">连胜越高，加分越多。</p>
+              </div>
+            </div>
+
+            <div class="ranked-panel">
+              <p class="info-title">段位表</p>
+              <div class="ranked-tiers" id="rankedTierList"></div>
+            </div>
+
+            <div class="ranked-panel">
+              <p class="info-title">积分规则</p>
+              <ul class="ranked-rules" id="rankedRules">
+                <li>赛季：30 天一个赛季，主题循环 S1-S12；赛季切换后积分与战绩重新计算（本机）。</li>
+                <li>基础分：HIS × 10。</li>
+                <li>胜负加分：按五维比分（5:0…0:5）结算；平局固定 +5；包含“惜败 -5”等档位。</li>
+                <li>每日首胜：当日首次“胜利”额外 +10。</li>
+                <li>连胜加成：连胜达到 3 / 5 / 10 触发额外加分。</li>
+                <li>积分保护：青铜/白银不降段；其它段位赛季内有 2 次保护盾（掉段时抵扣失败不扣分）。</li>
+              </ul>
+            </div>
+
+            <div class="ranked-panel">
+              <p class="info-title">最近战绩</p>
+              <ol class="mini-list" id="rankedMatchList"></ol>
             </div>
           </div>
-          <p class="lead" id="rankingHint">总榜按 HIS 排序；分榜为最小可用展示，不足时会回退到总榜。</p>
-          <ol class="rank-list" id="rankingList">
-            <li class="empty">还没有记录，先测一次再来看看。</li>
-          </ol>
+
+          <div id="rankingPkView" hidden>
+            <div class="ranked-head">
+              <div>
+                <p class="eyebrow">PK Record</p>
+                <h2 class="ranked-title">PK战绩</h2>
+              </div>
+              <div class="page-actions">
+                <button class="secondary" id="pkShareButton" type="button">分享战绩</button>
+              </div>
+            </div>
+            <p class="lead" id="pkHint">收到挑战并完成检测后，会自动记录一条 PK 结果（本机）。</p>
+            <ol class="rank-list" id="pkList">
+              <li class="empty">还没有 PK 记录。</li>
+            </ol>
+          </div>
         </div>
       </section>
 
@@ -235,7 +366,10 @@
               <p class="eyebrow">Achievements</p>
               <h1 id="achievements-title">成就</h1>
             </div>
-            <button class="secondary" id="achievementsResetSeenButton" type="button">清除弹窗已读</button>
+            <div class="page-actions">
+              <button class="secondary" id="achievementsShareButton" type="button">分享</button>
+              <button class="secondary" id="achievementsResetSeenButton" type="button">清除弹窗已读</button>
+            </div>
           </div>
           <p class="lead">成就基于单次结果 + 本机历史统计解锁，数据保存在本地浏览器。</p>
           <div class="achievements-grid" id="achievementsGrid"></div>
@@ -313,9 +447,53 @@
         </div>
       </div>
 
+      <div class="modal" id="shareModal" hidden aria-hidden="true">
+        <div class="modal-card share-modal-card" role="dialog" aria-labelledby="shareModalTitle" aria-modal="true">
+          <div class="modal-head">
+            <h2 id="shareModalTitle">分享</h2>
+            <button class="text-button" id="shareModalClose" type="button">关闭</button>
+          </div>
+          <div class="modal-body">
+            <div class="share-type-bar" role="tablist" aria-label="分享内容">
+              <button class="subtab is-active" id="shareTypePersonality" type="button" data-share-type="personality" role="tab" aria-selected="true">人格</button>
+              <button class="subtab" id="shareTypeTemplate" type="button" data-share-type="template" role="tab" aria-selected="false">模板对比</button>
+              <button class="subtab" id="shareTypeChallenge" type="button" data-share-type="challenge" role="tab" aria-selected="false">PK挑战</button>
+              <button class="subtab" id="shareTypePk" type="button" data-share-type="pk" role="tab" aria-selected="false">PK战绩</button>
+              <button class="subtab" id="shareTypeRanked" type="button" data-share-type="ranked" role="tab" aria-selected="false">排位</button>
+              <button class="subtab" id="shareTypeAchievements" type="button" data-share-type="achievements" role="tab" aria-selected="false">成就</button>
+            </div>
+
+            <p class="share-modal-copy" id="shareModalCopy"></p>
+
+            <div class="share-modal-preview">
+              <img id="shareModalImage" alt="分享海报预览" hidden />
+              <canvas id="shareModalCanvas" width="750" height="1334" hidden></canvas>
+            </div>
+
+            <div class="share-modal-qr">
+              <div class="qr-box">
+                <canvas id="shareModalQr" width="240" height="240"></canvas>
+              </div>
+              <p class="info-sub" id="shareModalQrHint">二维码仅在本地生成，不请求外网。</p>
+            </div>
+
+            <div class="share-modal-actions">
+              <button class="secondary" id="shareModalCopyButton" type="button">复制文案</button>
+              <button class="secondary" id="shareModalCopyLinkButton" type="button">复制链接</button>
+              <button class="secondary" id="shareModalSavePosterButton" type="button">保存海报</button>
+              <button class="primary" id="shareModalUniversalButton" type="button">通用分享</button>
+              <button class="secondary" id="shareModalWechatButton" type="button">微信</button>
+              <button class="secondary" id="shareModalQqButton" type="button">QQ</button>
+              <button class="secondary" id="shareModalDouyinButton" type="button">抖音</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="toast-host" id="toastHost" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
     </main>
 
+    <script src="./ranked_logic.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
